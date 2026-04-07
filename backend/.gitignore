@@ -34,3 +34,6 @@ build/
 
 ### Environment Variables - NEVER commit ###
 .env
+
+### Logs ###
+*.log
