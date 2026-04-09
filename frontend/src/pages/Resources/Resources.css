@@ -1,0 +1,229 @@
+/* PAGE */
+.page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #eef6f1, #d8ece2);
+  padding: 30px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* TITLE */
+.title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #14532d;
+  margin-bottom: 20px;
+}
+
+/* SEARCH */
+.search-bar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+.add-btn {
+  background: #166534;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* FILTER */
+.filter {
+  margin-bottom: 15px;
+}
+
+.filter button {
+  margin-right: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+}
+
+.filter .active {
+  background: #166534;
+  color: white;
+  border: none;
+}
+
+/* TABLE */
+.table-container {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #f0fdf4;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+}
+
+tr {
+  border-top: 1px solid #eee;
+}
+
+tr:hover {
+  background: #f9fafb;
+}
+
+/* RESOURCE ICON */
+.icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #dcfce7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.resource {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* STATUS */
+.status {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.active-status {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.out-status {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.maint-status {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+/* UTIL BAR */
+.util-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.bar {
+  height: 6px;
+  width: 100px;
+  background: #dcfce7;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: #16a34a;
+}
+
+/* ACTIONS */
+.actions button {
+  margin-right: 8px;
+  border: none;
+  cursor: pointer;
+  background: none;
+}
+
+.edit {
+  color: #15803d;
+}
+
+.delete {
+  color: red;
+}
+
+/* PAGINATION */
+.pagination {
+  margin-top: 15px;
+}
+
+.pagination button {
+  margin-right: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.pagination .active-page {
+  background: #166534;
+  color: white;
+}
+
+/* MODAL */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 50, 0, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: 350px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal input,
+.modal select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+}
+
+.modal-actions button {
+  padding: 8px 12px;
+  border: none;
+  cursor: pointer;
+}
+
+.modal-actions button:last-child {
+  background: #166534;
+  color: white;
+}
