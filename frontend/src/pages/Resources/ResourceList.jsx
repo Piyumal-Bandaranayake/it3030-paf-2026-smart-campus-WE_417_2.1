@@ -78,6 +78,9 @@ export default function ResourceList() {
             {s || "ALL"}
           </button>
         ))}
+        <button onClick={() => navigate("/equipment")}>
+          Equipments
+        </button>
       </div>
 
       {/* TABLE */}
