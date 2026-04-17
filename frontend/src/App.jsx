@@ -3,6 +3,8 @@ import Dashboard from "./pages/Dashboard";
 import ResourceList from "./pages/Resources/ResourceList";
 import UserResourceList from "./pages/Resources/UserResourceList";
 import EquipmentList from "./pages/Resources/EquipmentList";
+import Login from "./pages/Login";
+import UserDashboard from "./pages/UserDashboard";
 
 function App() {
   return (
@@ -13,8 +15,14 @@ function App() {
           <Route path="/resources" element={<ResourceList />} />
           <Route path="/user/resources" element={<UserResourceList />} />
           <Route path="/equipment" element={<EquipmentList />} />
-        </Routes>
-      </>
+       
+        {/* Public login page */}
+        <Route path="/" element={<Login />} />
+        {/* Marketing / landing dashboard */}
+        <Route path="/dashboard" element={<Dashboard />} />
+        {/* Logged-in user dashboard */}
+        <Route path="/user-dashboard" element={<UserDashboard />} />
+      </Routes>
     </BrowserRouter>
   );
 }
