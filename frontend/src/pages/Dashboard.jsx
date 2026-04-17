@@ -19,6 +19,7 @@ import {
   Users,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
+import api from "../api/axiosConfig";
 import "./Dashboard.css";
 
 // ── Count-up hook ──────────────────────────────────────────────
@@ -128,6 +129,15 @@ const heroMinis = [
 export default function Dashboard() {
   const [statsTrigger, setStatsTrigger] = useState(false);
   const statsRef = useRef(null);
+  const user = JSON.parse(sessionStorage.getItem("user") || "null");
+
+  // Redirect logged-in users to their personal dashboard
+  useEffect(() => {
+    const storedUser = sessionStorage.getItem("user");
+    if (storedUser) {
+      window.location.replace("/user-dashboard");
+    }
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -136,6 +146,23 @@ export default function Dashboard() {
     );
     if (statsRef.current) observer.observe(statsRef.current);
     return () => observer.disconnect();
+  }, []);
+
+  // Initialize user if redirected with login_success=true
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("login_success") === "true") {
+      api.get("/api/auth/me")
+        .then((res) => {
+          sessionStorage.setItem("user", JSON.stringify(res.data));
+          // Clean up URL without refreshing the page
+          window.history.replaceState({}, document.title, window.location.pathname);
+          window.location.reload(); // Refresh to ensure session state is updated everywhere
+        })
+        .catch((err) => {
+          console.error("Auth failed:", err);
+        });
+    }
   }, []);
 
   return (
