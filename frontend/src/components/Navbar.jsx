@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Building2, Menu, X } from "lucide-react";
+import { Building2, Menu, X, LogOut } from "lucide-react";
 import "./navbar.css";
 
 const navLinks = ["Home", "Resources", "Bookings", "Maintenance Tickets"];
@@ -7,6 +7,12 @@ const navLinks = ["Home", "Resources", "Bookings", "Maintenance Tickets"];
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const user = JSON.parse(sessionStorage.getItem("user") || "null");
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("user");
+    window.location.href = "http://localhost:8080/logout";
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -33,7 +39,20 @@ export default function Navbar() {
             </li>
           ))}
           <li>
-            <a href="#" className="navbar__login">Login</a>
+            {user ? (
+              <div className="navbar__user">
+                {user.profilePicture && (
+                  <img src={user.profilePicture} alt={user.name} className="navbar__avatar" />
+                )}
+                <span className="navbar__username">{user.name}</span>
+                <a href="/user-dashboard" className="navbar__dashboard-btn">My Dashboard</a>
+                <button className="navbar__logout" onClick={handleLogout} aria-label="Logout">
+                  <LogOut size={15} />
+                </button>
+              </div>
+            ) : (
+              <a href="/" className="navbar__login">Login</a>
+            )}
           </li>
         </ul>
 

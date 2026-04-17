@@ -190,3 +190,63 @@ body {
   .navbar__links  { display: none; }
   .navbar__toggle { display: flex; }
 }
+
+/* ── Navbar User Profile ── */
+.navbar__user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navbar__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--green-400);
+}
+
+.navbar__username {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--green-900);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navbar__logout {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-600);
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
+}
+
+.navbar__logout:hover {
+  color: #e53e3e;
+  background: #fff0f0;
+}
+
+/* My Dashboard button */
+.navbar__dashboard-btn {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  color: var(--white) !important;
+  background: var(--green-700) !important;
+  padding: 6px 14px !important;
+  border-radius: 99px !important;
+  text-decoration: none !important;
+  transition: background 0.2s, transform 0.15s !important;
+  white-space: nowrap;
+}
+
+.navbar__dashboard-btn:hover {
+  background: var(--green-600) !important;
+  transform: translateY(-1px) !important;
+}
