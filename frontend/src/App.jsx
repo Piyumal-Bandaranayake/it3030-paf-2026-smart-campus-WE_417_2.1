@@ -6,11 +6,14 @@ import EquipmentList from "./pages/Resources/EquipmentList";
 import Login from "./pages/Login";
 import UserDashboard from "./pages/UserDashboard";
 
+import Home from "./pages/Home";
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/resources" element={<ResourceList />} />
         <Route path="/user/resources" element={<UserResourceList />} />
         <Route path="/equipment" element={<EquipmentList />} />
