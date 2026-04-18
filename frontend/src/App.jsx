@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import UserDashboard from "./pages/UserDashboard";
 
 import Home from "./pages/Home";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -21,6 +22,8 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         {/* Logged-in user dashboard */}
         <Route path="/user-dashboard" element={<UserDashboard />} />
+        {/* Admin dashboard */}
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );
