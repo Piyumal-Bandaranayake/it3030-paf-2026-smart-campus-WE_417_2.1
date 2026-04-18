@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./Resources.css";
+import { X } from "lucide-react";
 
 export default function ResourceModal({ open, onClose, onSave }) {
   const [form, setForm] = useState({
@@ -18,7 +18,7 @@ export default function ResourceModal({ open, onClose, onSave }) {
 
   const handleSubmit = () => {
     if (!form.name || !form.location) {
-      alert("Fill all required fields");
+      alert("Please fill in all required fields.");
       return;
     }
 
@@ -32,30 +32,100 @@ export default function ResourceModal({ open, onClose, onSave }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Add Resource</h2>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+      {/* Overlay */}
+      <div 
+        className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity" 
+        onClick={onClose} 
+      />
 
-        <input name="name" placeholder="Resource Name" onChange={handleChange} />
-        <input name="location" placeholder="Location" onChange={handleChange} />
-        <input name="capacity" placeholder="Capacity" onChange={handleChange} />
+      {/* Modal */}
+      <div className="relative w-full max-w-lg overflow-hidden rounded-[32px] border border-white/10 bg-slate-900 p-8 shadow-2xl transition-all sm:p-10">
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-white">Add New Resource</h2>
+          <button 
+            onClick={onClose}
+            className="rounded-full p-2 text-slate-500 transition-colors hover:bg-white/5 hover:text-white"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
-        <select name="type" onChange={handleChange}>
-          <option>Lecture Hall</option>
-          <option>Lab</option>
-          <option>Meeting Room</option>
-          <option>Sports</option>
-        </select>
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Resource Name</label>
+            <input 
+              name="name" 
+              placeholder="e.g. Auditorium B" 
+              className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+              onChange={handleChange} 
+            />
+          </div>
 
-        <select name="status" onChange={handleChange}>
-          <option value="ACTIVE">Active</option>
-          <option value="OUT_OF_SERVICE">Out of Service</option>
-          <option value="MAINTENANCE">Maintenance</option>
-        </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Location</label>
+              <input 
+                name="location" 
+                placeholder="e.g. 2nd Floor" 
+                className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                onChange={handleChange} 
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Capacity</label>
+              <input 
+                name="capacity" 
+                type="number"
+                placeholder="e.g. 50" 
+                className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                onChange={handleChange} 
+              />
+            </div>
+          </div>
 
-        <div className="modal-actions">
-          <button onClick={onClose}>Cancel</button>
-          <button onClick={handleSubmit}>Save</button>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Type</label>
+              <select 
+                name="type" 
+                className="w-full appearance-none rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                onChange={handleChange}
+              >
+                <option>Lecture Hall</option>
+                <option>Lab</option>
+                <option>Meeting Room</option>
+                <option>Sports</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Status</label>
+              <select 
+                name="status" 
+                className="w-full appearance-none rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                onChange={handleChange}
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="OUT_OF_SERVICE">Out of Service</option>
+                <option value="MAINTENANCE">Maintenance</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 flex gap-4">
+          <button 
+            onClick={onClose}
+            className="flex-1 rounded-2xl border border-white/5 bg-white/5 py-4 text-sm font-bold text-slate-400 transition-all hover:bg-white/10 hover:text-white"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit}
+            className="flex-1 rounded-2xl bg-indigo-600 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)]"
+          >
+            Save Resource
+          </button>
         </div>
       </div>
     </div>
