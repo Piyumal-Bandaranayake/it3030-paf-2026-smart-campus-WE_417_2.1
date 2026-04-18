@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
-import "./Resources.css";
+import { useNavigate } from "react-router-dom";
+import { Search, Plus, Trash2, Edit2, ChevronLeft, ChevronRight, Building2, MapPin, Users, Settings } from "lucide-react";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 import ResourceModal from "./ResourceModal";
 
 const PER_PAGE = 6;
@@ -14,6 +17,7 @@ const initialResources = [
 ];
 
 export default function ResourceList() {
+  const navigate = useNavigate();
   const [resources, setResources] = useState(initialResources);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -47,140 +51,196 @@ export default function ResourceList() {
     setResources((prev) => prev.filter((r) => r.id !== id));
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "ACTIVE": return "text-emerald-400 bg-emerald-400/10 border-emerald-400/20";
+      case "OUT_OF_SERVICE": return "text-red-400 bg-red-400/10 border-red-400/20";
+      case "MAINTENANCE": return "text-amber-400 bg-amber-400/10 border-amber-400/20";
+      default: return "text-slate-400 bg-slate-400/10 border-slate-400/20";
+    }
+  };
+
   return (
-    <div className="page">
+    <div className="min-h-screen bg-[#020617] text-white">
+      <Navbar />
 
-      {/* TITLE */}
-      <h1 className="title">Resource Management</h1>
-
-      {/* SEARCH */}
-      <div className="search-bar">
-        <input
-          type="text"
-          placeholder="Search resources..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-
-        <button className="add-btn" onClick={() => setModalOpen(true)}>
-          + Add
-        </button>
-      </div>
-
-      {/* FILTER */}
-      <div className="filter">
-        {["", "ACTIVE", "OUT_OF_SERVICE", "MAINTENANCE"].map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className={statusFilter === s ? "active" : ""}
+      <main className="mx-auto max-w-7xl px-4 pt-32 pb-24 sm:px-6 lg:px-8">
+        {/* Header Section */}
+        <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-4xl font-black tracking-tight text-white">Resource <span className="text-indigo-400">Management</span></h1>
+            <p className="mt-2 text-slate-400">Monitor and manage all campus facilities and equipment in real-time.</p>
+          </div>
+          <button 
+            onClick={() => setModalOpen(true)}
+            className="flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white transition-all hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)]"
           >
-            {s || "ALL"}
+            <Plus size={18} />
+            Add Resource
           </button>
-        ))}
-        <button onClick={() => navigate("/equipment")}>
-          Equipments
-        </button>
-      </div>
+        </div>
 
-      {/* TABLE */}
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>Resource</th>
-              <th>Type</th>
-              <th>Location</th>
-              <th>Capacity</th>
-              <th>Status</th>
-              <th>Util</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+        {/* Controls Section */}
+        <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-4">
+          <div className="relative lg:col-span-2">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+            <input
+              type="text"
+              placeholder="Search by name or type..."
+              className="w-full rounded-2xl border border-white/5 bg-slate-900/50 py-3 pl-12 pr-4 text-sm text-white placeholder-slate-500 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          
+          <div className="flex gap-2 lg:col-span-2">
+            {["", "ACTIVE", "OUT_OF_SERVICE", "MAINTENANCE"].map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`flex-1 rounded-xl border px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${
+                  statusFilter === s 
+                    ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400" 
+                    : "border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
+                }`}
+              >
+                {s || "All Status"}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          <tbody>
-            {current.length === 0 ? (
-              <tr>
-                <td colSpan="7" style={{ textAlign: "center", padding: "20px" }}>
-                  No resources found
-                </td>
-              </tr>
-            ) : (
-              current.map((r) => (
-                <tr key={r.id}>
-                  <td>
-                    <div className="resource">
-                      <div className="icon">{r.type[0]}</div>
-                      <div>
-                        <div>{r.name}</div>
-                        <small>RES-{String(r.id).padStart(3, "0")}</small>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td>{r.type}</td>
-                  <td>{r.location}</td>
-                  <td>{r.capacity}</td>
-
-                  {/* STATUS */}
-                  <td>
-                    <span
-                      className={`status ${
-                        r.status === "ACTIVE"
-                          ? "active-status"
-                          : r.status === "OUT_OF_SERVICE"
-                          ? "out-status"
-                          : "maint-status"
-                      }`}
-                    >
-                      {r.status}
-                    </span>
-                  </td>
-
-                  {/* UTIL */}
-                  <td>
-                    <div className="util-bar">
-                      <div className="bar">
-                        <div
-                          className="fill"
-                          style={{ width: `${r.util}%` }}
-                        ></div>
-                      </div>
-                      {r.util}%
-                    </div>
-                  </td>
-
-                  {/* ACTIONS */}
-                  <td className="actions">
-                    <button className="edit">Edit</button>
-                    <button
-                      className="delete"
-                      onClick={() => deleteResource(r.id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
+        {/* Table/Cards Container */}
+        <div className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-white/5 bg-white/5">
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Resource</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Type</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Location</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Capacity</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Utilisation</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Actions</th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {current.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
+                      <div className="flex flex-col items-center gap-2">
+                        <Building2 size={32} className="opacity-20" />
+                        <span>No resources found matching your criteria</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  current.map((r) => (
+                    <tr key={r.id} className="group transition-colors hover:bg-white/[0.02]">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 font-bold">
+                            {r.type[0]}
+                          </div>
+                          <div>
+                            <div className="font-bold text-white">{r.name}</div>
+                            <div className="text-[10px] font-medium text-slate-500 uppercase">RES-{String(r.id).padStart(3, "0")}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm text-slate-300">{r.type}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-sm text-slate-300">
+                          <MapPin size={14} className="text-slate-500" />
+                          {r.location}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-sm text-slate-300">
+                          <Users size={14} className="text-slate-500" />
+                          {r.capacity}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getStatusColor(r.status)}`}>
+                          {r.status.replace(/_/g, " ")}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="w-full max-w-[100px]">
+                          <div className="mb-1 flex justify-between text-[10px] font-bold">
+                            <span className="text-slate-500">{r.util}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-1000 ${
+                                r.util > 80 ? "bg-red-500" : r.util > 50 ? "bg-amber-500" : "bg-emerald-500"
+                              }`}
+                              style={{ width: `${r.util}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-slate-400 transition-all hover:bg-white/10 hover:text-white">
+                            <Edit2 size={14} />
+                          </button>
+                          <button 
+                            onClick={() => deleteResource(r.id)}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-slate-400 transition-all hover:bg-red-500/10 hover:text-red-400"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-      {/* PAGINATION */}
-      <div className="pagination">
-        {[...Array(totalPages)].map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setPage(i + 1)}
-            className={page === i + 1 ? "active-page" : ""}
-          >
-            {i + 1}
-          </button>
-        ))}
-      </div>
+        {/* Pagination Section */}
+        {totalPages > 1 && (
+          <div className="mt-8 flex items-center justify-center gap-2">
+            <button 
+              disabled={page === 1}
+              onClick={() => setPage(p => p - 1)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-slate-900/50 text-slate-400 transition-all hover:bg-white/5 disabled:opacity-20"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            {[...Array(totalPages)].map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setPage(i + 1)}
+                className={`h-10 w-10 rounded-xl text-sm font-bold transition-all ${
+                  page === i + 1 
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" 
+                    : "border border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
+                }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button 
+              disabled={page === totalPages}
+              onClick={() => setPage(p => p + 1)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-slate-900/50 text-slate-400 transition-all hover:bg-white/5 disabled:opacity-20"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        )}
+      </main>
 
-      {/* MODAL */}
+      <Footer />
+
       <ResourceModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
