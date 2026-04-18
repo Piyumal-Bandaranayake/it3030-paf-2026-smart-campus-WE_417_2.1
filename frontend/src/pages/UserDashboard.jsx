@@ -52,16 +52,28 @@ export default function UserDashboard() {
       import("../api/axiosConfig").then(({ default: api }) => {
         api.get("/api/auth/me")
           .then((res) => {
-            sessionStorage.setItem("user", JSON.stringify(res.data));
-            setUser(res.data);
-            window.history.replaceState({}, document.title, window.location.pathname);
+            const userData = res.data;
+            sessionStorage.setItem("user", JSON.stringify(userData));
+            
+            // Redirect based on role
+            if (userData.role === "ADMIN") {
+              navigate("/admin-dashboard");
+            } else {
+              setUser(userData);
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
           })
           .catch(() => navigate("/login"));
       });
     } else {
       const stored = sessionStorage.getItem("user");
       if (stored) {
-        setUser(JSON.parse(stored));
+        const userData = JSON.parse(stored);
+        if (userData.role === "ADMIN") {
+          navigate("/admin-dashboard");
+        } else {
+          setUser(userData);
+        }
       } else {
         navigate("/login");
       }
