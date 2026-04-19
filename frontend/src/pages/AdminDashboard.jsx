@@ -20,6 +20,7 @@ import {
   Filter,
 } from "lucide-react";
 import ResourceModal from "./Resources/ResourceModal";
+import api from "../api/axiosConfig";
 
 const sidebarLinks = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -344,15 +345,57 @@ function BookingManagementSection() {
 }
 
 function ResourceManagementSection() {
-  const [resources, setResources] = useState([
-    { id: 1, name: "Lecture Hall A", type: "Lecture Hall", location: "1st Floor", capacity: 120, status: "ACTIVE", util: 87 },
-    { id: 2, name: "Computer Lab 1", type: "Lab", location: "3rd Floor", capacity: 40, status: "ACTIVE", util: 63 },
-    { id: 3, name: "Meeting Room B", type: "Meeting Room", location: "2nd Floor", capacity: 12, status: "OUT_OF_SERVICE", util: 0 },
-    { id: 4, name: "Sports Complex", type: "Sports", location: "Ground Floor", capacity: 200, status: "MAINTENANCE", util: 45 },
-  ]);
+  const [resources, setResources] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
   const [resourceFilter, setResourceFilter] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchResources = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await api.get("/api/resource");
+
+        if (!isMounted) {
+          return;
+        }
+
+        const normalizedResources = (response.data ?? []).map((resource, index) => ({
+          ...resource,
+          resourceCode: resource.resourceCode || `RES-${String(index + 1).padStart(3, "0")}`,
+          name: resource.name || "Unnamed Resource",
+          type: resource.type || "Unknown",
+          location: resource.location || "Not specified",
+          capacity: resource.capacity ?? 0,
+          status: resource.status || "ACTIVE",
+        }));
+
+        setResources(normalizedResources);
+      } catch (fetchError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError("Unable to load resources from the backend right now.");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchResources();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSaveResource = (resourceData) => {
     if (editingResource) {
@@ -438,12 +481,20 @@ function ResourceManagementSection() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {filteredResources.length === 0 ? (
+        {loading ? (
+          <div className="md:col-span-2 xl:col-span-3 rounded-[40px] border border-white/5 bg-slate-900/20 p-12 text-center text-slate-500">
+            Loading resources...
+          </div>
+        ) : error ? (
+          <div className="md:col-span-2 xl:col-span-3 rounded-[40px] border border-red-500/20 bg-red-500/5 p-12 text-center text-red-400">
+            {error}
+          </div>
+        ) : filteredResources.length === 0 ? (
           <div className="md:col-span-2 xl:col-span-3 rounded-[40px] border border-dashed border-white/10 bg-slate-900/20 p-12 text-center text-slate-500">
             No resources found for the {resourceFilter.toLowerCase()} filter.
           </div>
         ) : filteredResources.map((r) => (
-          <div key={r.id} className="group relative overflow-hidden rounded-[40px] border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl transition-all hover:border-indigo-500/30">
+          <div key={r.id || r.resourceCode} className="group relative overflow-hidden rounded-[40px] border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl transition-all hover:border-indigo-500/30">
             <div className="mb-6 flex items-start justify-between">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
                 <Building2 size={24} />
