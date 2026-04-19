@@ -351,6 +351,24 @@ function ResourceManagementSection() {
   const [resourceFilter, setResourceFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [savingResource, setSavingResource] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const normalizeResource = (resource, index = 0) => ({
+    ...resource,
+    resourceCode: resource.resourceCode || `RES-${String(index + 1).padStart(3, "0")}`,
+    name: resource.name || "Unnamed Resource",
+    type: resource.type || "Unknown",
+    location: resource.location || "Not specified",
+    capacity: resource.capacity ?? 0,
+    status: resource.status || "ACTIVE",
+  });
+
+  const sortResourcesByCode = (resourceList) => {
+    return [...resourceList].sort((first, second) =>
+      (first.resourceCode || "").localeCompare(second.resourceCode || "", undefined, { numeric: true })
+    );
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -366,17 +384,11 @@ function ResourceManagementSection() {
           return;
         }
 
-        const normalizedResources = (response.data ?? []).map((resource, index) => ({
-          ...resource,
-          resourceCode: resource.resourceCode || `RES-${String(index + 1).padStart(3, "0")}`,
-          name: resource.name || "Unnamed Resource",
-          type: resource.type || "Unknown",
-          location: resource.location || "Not specified",
-          capacity: resource.capacity ?? 0,
-          status: resource.status || "ACTIVE",
-        }));
+        const normalizedResources = (response.data ?? []).map((resource, index) =>
+          normalizeResource(resource, index)
+        );
 
-        setResources(normalizedResources);
+        setResources(sortResourcesByCode(normalizedResources));
       } catch (fetchError) {
         if (!isMounted) {
           return;
@@ -397,7 +409,7 @@ function ResourceManagementSection() {
     };
   }, []);
 
-  const handleSaveResource = (resourceData) => {
+  const handleSaveResource = async (resourceData) => {
     if (editingResource) {
       setResources((prev) =>
         prev.map((resource) =>
@@ -407,25 +419,45 @@ function ResourceManagementSection() {
       return;
     }
 
-    setResources((prev) => [
-      ...prev,
-      { id: prev.length + 1, ...resourceData },
-    ]);
+    try {
+      setSavingResource(true);
+      setSaveError("");
+
+      const response = await api.post("/api/resource", {
+        name: resourceData.name,
+        type: resourceData.type,
+        location: resourceData.location,
+        capacity: resourceData.capacity,
+        status: resourceData.status,
+      });
+
+      const savedResource = normalizeResource(response.data, resources.length);
+
+      setResources((prev) => sortResourcesByCode([...prev, savedResource]));
+    } catch (saveRequestError) {
+      setSaveError("Unable to save this resource to the database right now.");
+      throw saveRequestError;
+    } finally {
+      setSavingResource(false);
+    }
   };
 
   const handleAddResource = () => {
     setEditingResource(null);
+    setSaveError("");
     setModalOpen(true);
   };
 
   const handleEditResource = (resource) => {
     setEditingResource(resource);
+    setSaveError("");
     setModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setModalOpen(false);
     setEditingResource(null);
+    setSaveError("");
   };
 
   const handleDeleteResource = (resourceId) => {
@@ -531,6 +563,8 @@ function ResourceManagementSection() {
         onClose={handleCloseModal}
         onSave={handleSaveResource}
         initialData={editingResource}
+        saving={savingResource}
+        saveError={saveError}
       />
     </div>
   );

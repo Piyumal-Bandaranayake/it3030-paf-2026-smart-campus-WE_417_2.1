@@ -9,7 +9,15 @@ const defaultForm = {
   status: "ACTIVE",
 };
 
-export default function ResourceModal({ open, onClose, onSave, onDelete, initialData = null }) {
+export default function ResourceModal({
+  open,
+  onClose,
+  onSave,
+  onDelete,
+  initialData = null,
+  saving = false,
+  saveError = "",
+}) {
   const [form, setForm] = useState(defaultForm);
 
   useEffect(() => {
@@ -35,20 +43,24 @@ export default function ResourceModal({ open, onClose, onSave, onDelete, initial
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.name || !form.location) {
       alert("Please fill in all required fields.");
       return;
     }
 
-    onSave({
-      ...initialData,
-      ...form,
-      capacity: parseInt(form.capacity, 10) || 0,
-      util: initialData?.util ?? Math.floor(Math.random() * 80) + 10,
-    });
+    try {
+      await onSave({
+        ...initialData,
+        ...form,
+        capacity: parseInt(form.capacity, 10) || 0,
+        util: initialData?.util ?? Math.floor(Math.random() * 80) + 10,
+      });
 
-    onClose();
+      onClose();
+    } catch {
+      // The parent sets an inline error message when the save fails.
+    }
   };
 
   const handleDelete = () => {
@@ -62,7 +74,7 @@ export default function ResourceModal({ open, onClose, onSave, onDelete, initial
       {/* Overlay */}
       <div 
         className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity" 
-        onClick={onClose} 
+        onClick={saving ? undefined : onClose} 
       />
 
       {/* Modal */}
@@ -71,6 +83,7 @@ export default function ResourceModal({ open, onClose, onSave, onDelete, initial
           <h2 className="text-2xl font-bold text-white">{initialData ? "Edit Resource" : "Add New Resource"}</h2>
           <button 
             onClick={onClose}
+            disabled={saving}
             className="rounded-full p-2 text-slate-500 transition-colors hover:bg-white/5 hover:text-white"
           >
             <X size={20} />
@@ -126,6 +139,7 @@ export default function ResourceModal({ open, onClose, onSave, onDelete, initial
                 <option>Lab</option>
                 <option>Meeting Room</option>
                 <option>Sports</option>
+                <option>Equipment</option>
               </select>
             </div>
             <div className="space-y-2">
@@ -142,24 +156,32 @@ export default function ResourceModal({ open, onClose, onSave, onDelete, initial
               </select>
             </div>
           </div>
+
+          {saveError ? (
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+              {saveError}
+            </div>
+          ) : null}
         </div>
 
         <div className="mt-10 flex gap-4">
           <button 
             onClick={onClose}
+            disabled={saving}
             className="flex-1 rounded-2xl border border-white/5 bg-white/5 py-4 text-sm font-bold text-slate-400 transition-all hover:bg-white/10 hover:text-white"
           >
             Cancel
           </button>
           <button 
             onClick={initialData && onDelete ? handleDelete : handleSubmit}
+            disabled={saving}
             className={`flex-1 rounded-2xl py-4 text-sm font-bold text-white transition-all ${
               initialData && onDelete
                 ? "bg-red-600 hover:bg-red-500 hover:shadow-[0_0_20px_rgba(220,38,38,0.3)]"
                 : "bg-indigo-600 hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)]"
             }`}
           >
-            {initialData && onDelete ? "Delete Resource" : initialData ? "Update Resource" : "Save Resource"}
+            {saving ? "Saving..." : initialData && onDelete ? "Delete Resource" : initialData ? "Update Resource" : "Save Resource"}
           </button>
         </div>
       </div>
