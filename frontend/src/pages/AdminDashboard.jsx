@@ -14,6 +14,7 @@ import {
   XCircle,
   Clock,
   Settings,
+  Trash2,
   Shield,
   ChevronRight,
   Filter,
@@ -350,12 +351,41 @@ function ResourceManagementSection() {
     { id: 4, name: "Sports Complex", type: "Sports", location: "Ground Floor", capacity: 200, status: "MAINTENANCE", util: 45 },
   ]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingResource, setEditingResource] = useState(null);
 
-  const addResource = (newResource) => {
+  const handleSaveResource = (resourceData) => {
+    if (editingResource) {
+      setResources((prev) =>
+        prev.map((resource) =>
+          resource.id === editingResource.id ? { ...resource, ...resourceData } : resource
+        )
+      );
+      return;
+    }
+
     setResources((prev) => [
       ...prev,
-      { id: prev.length + 1, ...newResource },
+      { id: prev.length + 1, ...resourceData },
     ]);
+  };
+
+  const handleAddResource = () => {
+    setEditingResource(null);
+    setModalOpen(true);
+  };
+
+  const handleEditResource = (resource) => {
+    setEditingResource(resource);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setEditingResource(null);
+  };
+
+  const handleDeleteResource = (resourceId) => {
+    setResources((prev) => prev.filter((resource) => resource.id !== resourceId));
   };
 
   const getStatusClasses = (status) => {
@@ -380,7 +410,7 @@ function ResourceManagementSection() {
           ))}
         </div>
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={handleAddResource}
           className="flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20"
         >
           <Plus size={18} /> Add New Resource
@@ -404,8 +434,18 @@ function ResourceManagementSection() {
               Capacity {r.capacity}
             </div>
             <div className="flex gap-3">
-              <button className="flex-1 rounded-xl bg-white/5 py-3 text-xs font-bold text-slate-300 hover:bg-white/10 transition-all">Edit Details</button>
-              <button className="rounded-xl bg-white/5 px-4 py-3 text-slate-400 hover:text-red-400 transition-all border border-white/5"><Settings size={16} /></button>
+              <button
+                onClick={() => handleEditResource(r)}
+                className="flex-1 rounded-xl bg-white/5 py-3 text-xs font-bold text-slate-300 hover:bg-white/10 transition-all"
+              >
+                Edit Details
+              </button>
+              <button
+                onClick={() => handleDeleteResource(r.id)}
+                className="rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-slate-400 transition-all hover:text-red-400"
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
           </div>
         ))}
@@ -413,8 +453,9 @@ function ResourceManagementSection() {
 
       <ResourceModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSave={addResource}
+        onClose={handleCloseModal}
+        onSave={handleSaveResource}
+        initialData={editingResource}
       />
     </div>
   );
