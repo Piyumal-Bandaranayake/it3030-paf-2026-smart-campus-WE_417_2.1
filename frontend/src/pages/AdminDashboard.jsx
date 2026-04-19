@@ -352,6 +352,7 @@ function ResourceManagementSection() {
   ]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
+  const [resourceFilter, setResourceFilter] = useState("All");
 
   const handleSaveResource = (resourceData) => {
     if (editingResource) {
@@ -401,12 +402,31 @@ function ResourceManagementSection() {
     }
   };
 
+  const getResourceCategory = (resource) => {
+    return resource.type === "Equipment" ? "Equipment" : "Facilities";
+  };
+
+  const filteredResources = resources.filter((resource) => {
+    if (resourceFilter === "All") return true;
+    return getResourceCategory(resource) === resourceFilter;
+  });
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-2">
           {["All", "Facilities", "Equipment"].map((t) => (
-            <button key={t} className="rounded-xl border border-white/5 bg-slate-900/50 px-5 py-2 text-xs font-bold text-slate-400 hover:text-white transition-all">{t}</button>
+            <button
+              key={t}
+              onClick={() => setResourceFilter(t)}
+              className={`rounded-xl border px-5 py-2 text-xs font-bold transition-all ${
+                resourceFilter === t
+                  ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
+                  : "border-white/5 bg-slate-900/50 text-slate-400 hover:text-white"
+              }`}
+            >
+              {t}
+            </button>
           ))}
         </div>
         <button
@@ -418,7 +438,11 @@ function ResourceManagementSection() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {resources.map((r) => (
+        {filteredResources.length === 0 ? (
+          <div className="md:col-span-2 xl:col-span-3 rounded-[40px] border border-dashed border-white/10 bg-slate-900/20 p-12 text-center text-slate-500">
+            No resources found for the {resourceFilter.toLowerCase()} filter.
+          </div>
+        ) : filteredResources.map((r) => (
           <div key={r.id} className="group relative overflow-hidden rounded-[40px] border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl transition-all hover:border-indigo-500/30">
             <div className="mb-6 flex items-start justify-between">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
