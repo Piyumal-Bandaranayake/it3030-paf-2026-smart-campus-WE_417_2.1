@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Building2,
@@ -40,6 +40,7 @@ export default function UserDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [greeting, setGreeting] = useState("Good day");
+  const recentActivityRef = useRef(null);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -85,6 +86,16 @@ export default function UserDashboard() {
     navigate("/");
   };
 
+  const handleSidebarNavigation = (label) => {
+    if (label === "Resources") {
+      navigate("/resources");
+    }
+
+    if (label === "Alerts") {
+      recentActivityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   if (!user) return null;
 
   const firstName = user.name ? user.name.split(" ")[0] : "User";
@@ -111,6 +122,7 @@ export default function UserDashboard() {
           ].map(({ icon: Icon, label, active }) => (
             <button
               key={label}
+              onClick={() => handleSidebarNavigation(label)}
               className={`group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
                 active 
                   ? "bg-indigo-500/10 text-indigo-400" 
@@ -182,7 +194,7 @@ export default function UserDashboard() {
         {/* Content grid */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           {/* Quick Actions */}
-          <section className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl">
+          <section ref={recentActivityRef} className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl">
             <div className="mb-8 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white">Quick Actions</h2>
               <button className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-indigo-500">

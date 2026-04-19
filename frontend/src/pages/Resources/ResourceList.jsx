@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search, Plus, Trash2, Edit2, ChevronLeft, ChevronRight, Building2, MapPin, Users, Settings } from "lucide-react";
+import { Search, Plus, ChevronLeft, ChevronRight, Building2, MapPin, Users } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ResourceModal from "./ResourceModal";
+import BookingModal from "./BookingModal";
 
 const PER_PAGE = 6;
 
@@ -17,12 +17,13 @@ const initialResources = [
 ];
 
 export default function ResourceList() {
-  const navigate = useNavigate();
   const [resources, setResources] = useState(initialResources);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [selectedResource, setSelectedResource] = useState(null);
 
   /* FILTER */
   const filtered = useMemo(() => {
@@ -43,12 +44,6 @@ export default function ResourceList() {
       ...prev,
       { id: prev.length + 1, ...newRes },
     ]);
-  };
-
-  /* DELETE */
-  const deleteResource = (id) => {
-    if (!window.confirm("Delete this resource?")) return;
-    setResources((prev) => prev.filter((r) => r.id !== id));
   };
 
   const getStatusColor = (status) => {
@@ -121,14 +116,13 @@ export default function ResourceList() {
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Location</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Capacity</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Utilisation</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {current.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center gap-2">
                         <Building2 size={32} className="opacity-20" />
                         <span>No resources found matching your criteria</span>
@@ -170,31 +164,22 @@ export default function ResourceList() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="w-full max-w-[100px]">
-                          <div className="mb-1 flex justify-between text-[10px] font-bold">
-                            <span className="text-slate-500">{r.util}%</span>
-                          </div>
-                          <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
-                            <div 
-                              className={`h-full rounded-full transition-all duration-1000 ${
-                                r.util > 80 ? "bg-red-500" : r.util > 50 ? "bg-amber-500" : "bg-emerald-500"
-                              }`}
-                              style={{ width: `${r.util}%` }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-slate-400 transition-all hover:bg-white/10 hover:text-white">
-                            <Edit2 size={14} />
-                          </button>
-                          <button 
-                            onClick={() => deleteResource(r.id)}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-slate-400 transition-all hover:bg-red-500/10 hover:text-red-400"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          {r.status === "ACTIVE" ? (
+                            <button
+                              onClick={() => {
+                                setSelectedResource(r);
+                                setBookingModalOpen(true);
+                              }}
+                              className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-indigo-500"
+                            >
+                              Book
+                            </button>
+                          ) : (
+                            <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                              Unavailable
+                            </span>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -245,6 +230,15 @@ export default function ResourceList() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSave={addResource}
+      />
+
+      <BookingModal
+        open={bookingModalOpen}
+        onClose={() => {
+          setBookingModalOpen(false);
+          setSelectedResource(null);
+        }}
+        resource={selectedResource}
       />
     </div>
   );
