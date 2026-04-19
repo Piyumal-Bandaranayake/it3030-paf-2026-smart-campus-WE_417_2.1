@@ -460,8 +460,21 @@ function ResourceManagementSection() {
     setSaveError("");
   };
 
-  const handleDeleteResource = (resourceId) => {
-    setResources((prev) => prev.filter((resource) => resource.id !== resourceId));
+  const handleDeleteResource = async (resource) => {
+    try {
+      setSavingResource(true);
+      setSaveError("");
+
+      await api.delete(`/api/resource/${resource.id}`);
+
+      // Remove from local state after successful deletion
+      setResources((prev) => prev.filter((r) => r.id !== resource.id));
+    } catch (deleteError) {
+      setSaveError("Unable to delete this resource right now.");
+      throw deleteError;
+    } finally {
+      setSavingResource(false);
+    }
   };
 
   const getStatusClasses = (status) => {
@@ -548,8 +561,12 @@ function ResourceManagementSection() {
                 Edit Details
               </button>
               <button
-                onClick={() => handleDeleteResource(r.id)}
-                className="rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-slate-400 transition-all hover:text-red-400"
+                onClick={() => {
+                  if (confirm(`Are you sure you want to delete "${r.name}"? This action cannot be undone.`)) {
+                    handleDeleteResource(r);
+                  }
+                }}
+                className="rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-slate-400 transition-all hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/5"
               >
                 <Trash2 size={16} />
               </button>
@@ -562,6 +579,7 @@ function ResourceManagementSection() {
         open={modalOpen}
         onClose={handleCloseModal}
         onSave={handleSaveResource}
+        onDelete={handleDeleteResource}
         initialData={editingResource}
         saving={savingResource}
         saveError={saveError}
