@@ -410,32 +410,41 @@ function ResourceManagementSection() {
   }, []);
 
   const handleSaveResource = async (resourceData) => {
-    if (editingResource) {
-      setResources((prev) =>
-        prev.map((resource) =>
-          resource.id === editingResource.id ? { ...resource, ...resourceData } : resource
-        )
-      );
-      return;
-    }
-
     try {
       setSavingResource(true);
       setSaveError("");
 
-      const response = await api.post("/api/resource", {
+      const payload = {
         name: resourceData.name,
         type: resourceData.type,
         location: resourceData.location,
         capacity: resourceData.capacity,
         status: resourceData.status,
-      });
+        description: resourceData.description || "",
+      };
 
-      const savedResource = normalizeResource(response.data, resources.length);
+      if (editingResource) {
+        // Update existing resource
+        const response = await api.put(`/api/resource/${editingResource.id}`, payload);
+        
+        setResources((prev) =>
+          prev.map((resource) =>
+            resource.id === editingResource.id ? normalizeResource(response.data, resources.length) : resource
+          )
+        );
+      } else {
+        // Create new resource
+        const response = await api.post("/api/resource", payload);
+        const savedResource = normalizeResource(response.data, resources.length);
+        setResources((prev) => sortResourcesByCode([...prev, savedResource]));
+      }
 
-      setResources((prev) => sortResourcesByCode([...prev, savedResource]));
+      handleCloseModal();
     } catch (saveRequestError) {
-      setSaveError("Unable to save this resource to the database right now.");
+      setSaveError(editingResource 
+        ? "Unable to update this resource right now." 
+        : "Unable to save this resource to the database right now."
+      );
       throw saveRequestError;
     } finally {
       setSavingResource(false);

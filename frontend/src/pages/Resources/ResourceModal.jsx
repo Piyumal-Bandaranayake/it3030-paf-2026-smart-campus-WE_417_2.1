@@ -186,15 +186,11 @@ export default function ResourceModal({
             Cancel
           </button>
           <button 
-            onClick={initialData && onDelete ? handleDelete : handleSubmit}
+            onClick={handleSubmit}
             disabled={saving}
-            className={`flex-1 rounded-2xl py-4 text-sm font-bold text-white transition-all ${
-              initialData && onDelete
-                ? "bg-red-600 hover:bg-red-500 hover:shadow-[0_0_20px_rgba(220,38,38,0.3)]"
-                : "bg-indigo-600 hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)]"
-            }`}
+            className="flex-1 rounded-2xl bg-indigo-600 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)]"
           >
-            {saving ? "Saving..." : initialData && onDelete ? "Delete Resource" : initialData ? "Update Resource" : "Save Resource"}
+            {saving ? "Saving..." : initialData ? "Update Resource" : "Save Resource"}
           </button>
         </div>
       </div>
