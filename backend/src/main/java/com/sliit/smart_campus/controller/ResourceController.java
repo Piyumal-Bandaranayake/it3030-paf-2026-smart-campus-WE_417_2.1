@@ -2,19 +2,21 @@ package com.sliit.smart_campus.controller;
 
 import com.sliit.smart_campus.model.Resource;
 import com.sliit.smart_campus.repository.ResourceRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/resources")
-@CrossOrigin(origins = "*") // For testing purposes
+@RequestMapping({"/api/resource", "/api/resources"})
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 public class ResourceController {
 
-    @Autowired
-    private ResourceRepository resourceRepository;
+    private final ResourceRepository resourceRepository;
+
+    public ResourceController(ResourceRepository resourceRepository) {
+        this.resourceRepository = resourceRepository;
+    }
 
     @PostMapping
     public ResponseEntity<Resource> createResource(@RequestBody Resource resource) {
@@ -23,7 +25,12 @@ public class ResourceController {
 
     @GetMapping
     public ResponseEntity<List<Resource>> getAllResources() {
-        return ResponseEntity.ok(resourceRepository.findAll());
+        return ResponseEntity.ok(resourceRepository.findAllByOrderByResourceCodeAsc());
+    }
+
+    @GetMapping("/equipment")
+    public ResponseEntity<List<Resource>> getEquipmentResources() {
+        return ResponseEntity.ok(resourceRepository.findByTypeIgnoreCaseOrderByResourceCodeAsc("Equipment"));
     }
 
     @GetMapping("/{id}")

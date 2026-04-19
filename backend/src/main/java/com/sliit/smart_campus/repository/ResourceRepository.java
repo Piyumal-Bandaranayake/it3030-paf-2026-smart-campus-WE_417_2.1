@@ -9,4 +9,7 @@ import java.util.List;
 @Repository
 public interface ResourceRepository extends MongoRepository<Resource, String> {
     List<Resource> findByType(String type);
+    List<Resource> findAllByOrderByResourceCodeAsc();
+    List<Resource> findByTypeIgnoreCaseOrderByResourceCodeAsc(String type);
+    boolean existsByResourceCode(String resourceCode);
 }
