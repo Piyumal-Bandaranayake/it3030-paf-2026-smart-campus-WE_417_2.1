@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Filter,
 } from "lucide-react";
+import ResourceModal from "./Resources/ResourceModal";
 
 const sidebarLinks = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -342,38 +343,66 @@ function BookingManagementSection() {
 }
 
 function ResourceManagementSection() {
-  const resources = [
-    { name: "Auditorium A", type: "Facility", location: "Building 1", status: "Active" },
-    { name: "Projector X", type: "Equipment", location: "Central Hub", status: "Maintenance" },
-    { name: "Meeting Room B", type: "Facility", location: "Building 2", status: "Active" },
-  ];
+  const [resources, setResources] = useState([
+    { id: 1, name: "Lecture Hall A", type: "Lecture Hall", location: "1st Floor", capacity: 120, status: "ACTIVE", util: 87 },
+    { id: 2, name: "Computer Lab 1", type: "Lab", location: "3rd Floor", capacity: 40, status: "ACTIVE", util: 63 },
+    { id: 3, name: "Meeting Room B", type: "Meeting Room", location: "2nd Floor", capacity: 12, status: "OUT_OF_SERVICE", util: 0 },
+    { id: 4, name: "Sports Complex", type: "Sports", location: "Ground Floor", capacity: 200, status: "MAINTENANCE", util: 45 },
+  ]);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const addResource = (newResource) => {
+    setResources((prev) => [
+      ...prev,
+      { id: prev.length + 1, ...newResource },
+    ]);
+  };
+
+  const getStatusClasses = (status) => {
+    switch (status) {
+      case "ACTIVE":
+        return "text-emerald-400 border-emerald-400/20 bg-emerald-400/10";
+      case "OUT_OF_SERVICE":
+        return "text-red-400 border-red-400/20 bg-red-400/10";
+      case "MAINTENANCE":
+        return "text-amber-400 border-amber-400/20 bg-amber-400/10";
+      default:
+        return "text-slate-400 border-white/10 bg-white/5";
+    }
+  };
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-2">
-          {["All", "Facilities", "Equipment"].map(t => (
+          {["All", "Facilities", "Equipment"].map((t) => (
             <button key={t} className="rounded-xl border border-white/5 bg-slate-900/50 px-5 py-2 text-xs font-bold text-slate-400 hover:text-white transition-all">{t}</button>
           ))}
         </div>
-        <button className="flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20">
+        <button
+          onClick={() => setModalOpen(true)}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-600/20"
+        >
           <Plus size={18} /> Add New Resource
         </button>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {resources.map((r, i) => (
-          <div key={i} className="group relative overflow-hidden rounded-[40px] border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl transition-all hover:border-indigo-500/30">
+        {resources.map((r) => (
+          <div key={r.id} className="group relative overflow-hidden rounded-[40px] border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl transition-all hover:border-indigo-500/30">
             <div className="mb-6 flex items-start justify-between">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
                 <Building2 size={24} />
               </div>
-              <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest border ${r.status === 'Active' ? 'text-emerald-400 border-emerald-400/20 bg-emerald-400/10' : 'text-amber-400 border-amber-400/20 bg-amber-400/10'}`}>
-                {r.status}
+              <span className={`inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest border ${getStatusClasses(r.status)}`}>
+                {r.status.replace(/_/g, " ")}
               </span>
             </div>
-            <h3 className="text-xl font-bold mb-1">{r.name}</h3>
+            <h3 className="mb-1 text-xl font-bold">{r.name}</h3>
             <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-6">{r.type} • {r.location}</p>
+            <div className="mb-6 inline-flex rounded-full border border-white/5 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Capacity {r.capacity}
+            </div>
             <div className="flex gap-3">
               <button className="flex-1 rounded-xl bg-white/5 py-3 text-xs font-bold text-slate-300 hover:bg-white/10 transition-all">Edit Details</button>
               <button className="rounded-xl bg-white/5 px-4 py-3 text-slate-400 hover:text-red-400 transition-all border border-white/5"><Settings size={16} /></button>
@@ -381,6 +410,12 @@ function ResourceManagementSection() {
           </div>
         ))}
       </div>
+
+      <ResourceModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={addResource}
+      />
     </div>
   );
 }

@@ -107,10 +107,6 @@ const EquipmentList = () => {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button className="flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-500">
-            <Plus size={18} />
-            Request Item
-          </button>
         </div>
 
         {/* Equipment Grid */}
