@@ -112,14 +112,6 @@ export default function AdminDashboard() {
             <p className="mt-2 text-slate-400 font-medium">Manage your campus operations and data.</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-              <input 
-                type="text" 
-                placeholder="Quick search..." 
-                className="w-64 rounded-2xl border border-white/5 bg-slate-900/50 py-3 pl-12 pr-4 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none"
-              />
-            </div>
             <button className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-slate-400 transition-all hover:bg-white/10">
               <Bell size={20} />
               <span className="absolute top-3 right-3 h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]"></span>
@@ -349,6 +341,7 @@ function ResourceManagementSection() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
   const [resourceFilter, setResourceFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savingResource, setSavingResource] = useState(false);
@@ -504,12 +497,30 @@ function ResourceManagementSection() {
   };
 
   const filteredResources = resources.filter((resource) => {
-    if (resourceFilter === "All") return true;
-    return getResourceCategory(resource) === resourceFilter;
+    // Filter by type (All/Facilities/Equipment)
+    const matchesFilter = resourceFilter === "All" || getResourceCategory(resource) === resourceFilter;
+    
+    // Filter by search query (name)
+    const matchesSearch = searchQuery === "" || 
+      resource.name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
   });
 
   return (
     <div className="space-y-8">
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+        <input
+          type="text"
+          placeholder="Search resources by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full rounded-2xl border border-white/5 bg-slate-900/50 py-3 pl-12 pr-4 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none"
+        />
+      </div>
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-2">
           {["All", "Facilities", "Equipment"].map((t) => (
@@ -545,7 +556,7 @@ function ResourceManagementSection() {
           </div>
         ) : filteredResources.length === 0 ? (
           <div className="md:col-span-2 xl:col-span-3 rounded-[40px] border border-dashed border-white/10 bg-slate-900/20 p-12 text-center text-slate-500">
-            No resources found for the {resourceFilter.toLowerCase()} filter.
+            No resources found{resourceFilter !== "All" ? ` for the ${resourceFilter.toLowerCase()} filter` : ""}{searchQuery ? ` matching "${searchQuery}"` : ""}.
           </div>
         ) : filteredResources.map((r) => (
           <div key={r.id || r.resourceCode} className="group relative overflow-hidden rounded-[40px] border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl transition-all hover:border-indigo-500/30">
