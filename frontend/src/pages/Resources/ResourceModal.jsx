@@ -7,6 +7,7 @@ const defaultForm = {
   location: "",
   capacity: "",
   status: "ACTIVE",
+  description: "",
 };
 
 export default function ResourceModal({
@@ -30,6 +31,7 @@ export default function ResourceModal({
         location: initialData.location ?? "",
         capacity: initialData.capacity?.toString() ?? "",
         status: initialData.status ?? defaultForm.status,
+        description: initialData.description ?? "",
       });
       return;
     }
@@ -54,7 +56,6 @@ export default function ResourceModal({
         ...initialData,
         ...form,
         capacity: parseInt(form.capacity, 10) || 0,
-        util: initialData?.util ?? Math.floor(Math.random() * 80) + 10,
       });
 
       onClose();
@@ -124,6 +125,18 @@ export default function ResourceModal({
                 onChange={handleChange} 
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Description</label>
+            <textarea 
+              name="description" 
+              placeholder="e.g. Large lecture hall for classes and seminars" 
+              className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 resize-none"
+              rows="3"
+              value={form.description}
+              onChange={handleChange} 
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
