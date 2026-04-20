@@ -20,6 +20,7 @@ import {
   Filter,
 } from "lucide-react";
 import ResourceModal from "./Resources/ResourceModal";
+import api from "../api/axiosConfig";
 
 const sidebarLinks = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -111,14 +112,6 @@ export default function AdminDashboard() {
             <p className="mt-2 text-slate-400 font-medium">Manage your campus operations and data.</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-              <input 
-                type="text" 
-                placeholder="Quick search..." 
-                className="w-64 rounded-2xl border border-white/5 bg-slate-900/50 py-3 pl-12 pr-4 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none"
-              />
-            </div>
             <button className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-slate-400 transition-all hover:bg-white/10">
               <Bell size={20} />
               <span className="absolute top-3 right-3 h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]"></span>
@@ -344,49 +337,146 @@ function BookingManagementSection() {
 }
 
 function ResourceManagementSection() {
-  const [resources, setResources] = useState([
-    { id: 1, name: "Lecture Hall A", type: "Lecture Hall", location: "1st Floor", capacity: 120, status: "ACTIVE", util: 87 },
-    { id: 2, name: "Computer Lab 1", type: "Lab", location: "3rd Floor", capacity: 40, status: "ACTIVE", util: 63 },
-    { id: 3, name: "Meeting Room B", type: "Meeting Room", location: "2nd Floor", capacity: 12, status: "OUT_OF_SERVICE", util: 0 },
-    { id: 4, name: "Sports Complex", type: "Sports", location: "Ground Floor", capacity: 200, status: "MAINTENANCE", util: 45 },
-  ]);
+  const [resources, setResources] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
   const [resourceFilter, setResourceFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [savingResource, setSavingResource] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
-  const handleSaveResource = (resourceData) => {
-    if (editingResource) {
-      setResources((prev) =>
-        prev.map((resource) =>
-          resource.id === editingResource.id ? { ...resource, ...resourceData } : resource
-        )
+  const normalizeResource = (resource, index = 0) => ({
+    ...resource,
+    resourceCode: resource.resourceCode || `RES-${String(index + 1).padStart(3, "0")}`,
+    name: resource.name || "Unnamed Resource",
+    type: resource.type || "Unknown",
+    location: resource.location || "Not specified",
+    capacity: resource.capacity ?? 0,
+    status: resource.status || "ACTIVE",
+  });
+
+  const sortResourcesByCode = (resourceList) => {
+    return [...resourceList].sort((first, second) =>
+      (first.resourceCode || "").localeCompare(second.resourceCode || "", undefined, { numeric: true })
+    );
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchResources = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await api.get("/api/resource");
+
+        if (!isMounted) {
+          return;
+        }
+
+        const normalizedResources = (response.data ?? []).map((resource, index) =>
+          normalizeResource(resource, index)
+        );
+
+        setResources(sortResourcesByCode(normalizedResources));
+      } catch (fetchError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError("Unable to load resources from the backend right now.");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchResources();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSaveResource = async (resourceData) => {
+    try {
+      setSavingResource(true);
+      setSaveError("");
+
+      const payload = {
+        name: resourceData.name,
+        type: resourceData.type,
+        location: resourceData.location,
+        capacity: resourceData.capacity,
+        status: resourceData.status,
+        description: resourceData.description || "",
+      };
+
+      if (editingResource) {
+        // Update existing resource
+        const response = await api.put(`/api/resource/${editingResource.id}`, payload);
+        
+        setResources((prev) =>
+          prev.map((resource) =>
+            resource.id === editingResource.id ? normalizeResource(response.data, resources.length) : resource
+          )
+        );
+      } else {
+        // Create new resource
+        const response = await api.post("/api/resource", payload);
+        const savedResource = normalizeResource(response.data, resources.length);
+        setResources((prev) => sortResourcesByCode([...prev, savedResource]));
+      }
+
+      handleCloseModal();
+    } catch (saveRequestError) {
+      setSaveError(editingResource 
+        ? "Unable to update this resource right now." 
+        : "Unable to save this resource to the database right now."
       );
-      return;
+      throw saveRequestError;
+    } finally {
+      setSavingResource(false);
     }
-
-    setResources((prev) => [
-      ...prev,
-      { id: prev.length + 1, ...resourceData },
-    ]);
   };
 
   const handleAddResource = () => {
     setEditingResource(null);
+    setSaveError("");
     setModalOpen(true);
   };
 
   const handleEditResource = (resource) => {
     setEditingResource(resource);
+    setSaveError("");
     setModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setModalOpen(false);
     setEditingResource(null);
+    setSaveError("");
   };
 
-  const handleDeleteResource = (resourceId) => {
-    setResources((prev) => prev.filter((resource) => resource.id !== resourceId));
+  const handleDeleteResource = async (resource) => {
+    try {
+      setSavingResource(true);
+      setSaveError("");
+
+      await api.delete(`/api/resource/${resource.id}`);
+
+      // Remove from local state after successful deletion
+      setResources((prev) => prev.filter((r) => r.id !== resource.id));
+    } catch (deleteError) {
+      setSaveError("Unable to delete this resource right now.");
+      throw deleteError;
+    } finally {
+      setSavingResource(false);
+    }
   };
 
   const getStatusClasses = (status) => {
@@ -407,12 +497,30 @@ function ResourceManagementSection() {
   };
 
   const filteredResources = resources.filter((resource) => {
-    if (resourceFilter === "All") return true;
-    return getResourceCategory(resource) === resourceFilter;
+    // Filter by type (All/Facilities/Equipment)
+    const matchesFilter = resourceFilter === "All" || getResourceCategory(resource) === resourceFilter;
+    
+    // Filter by search query (name)
+    const matchesSearch = searchQuery === "" || 
+      resource.name.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
   });
 
   return (
     <div className="space-y-8">
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+        <input
+          type="text"
+          placeholder="Search resources by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full rounded-2xl border border-white/5 bg-slate-900/50 py-3 pl-12 pr-4 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none"
+        />
+      </div>
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-2">
           {["All", "Facilities", "Equipment"].map((t) => (
@@ -438,12 +546,20 @@ function ResourceManagementSection() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {filteredResources.length === 0 ? (
+        {loading ? (
+          <div className="md:col-span-2 xl:col-span-3 rounded-[40px] border border-white/5 bg-slate-900/20 p-12 text-center text-slate-500">
+            Loading resources...
+          </div>
+        ) : error ? (
+          <div className="md:col-span-2 xl:col-span-3 rounded-[40px] border border-red-500/20 bg-red-500/5 p-12 text-center text-red-400">
+            {error}
+          </div>
+        ) : filteredResources.length === 0 ? (
           <div className="md:col-span-2 xl:col-span-3 rounded-[40px] border border-dashed border-white/10 bg-slate-900/20 p-12 text-center text-slate-500">
-            No resources found for the {resourceFilter.toLowerCase()} filter.
+            No resources found{resourceFilter !== "All" ? ` for the ${resourceFilter.toLowerCase()} filter` : ""}{searchQuery ? ` matching "${searchQuery}"` : ""}.
           </div>
         ) : filteredResources.map((r) => (
-          <div key={r.id} className="group relative overflow-hidden rounded-[40px] border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl transition-all hover:border-indigo-500/30">
+          <div key={r.id || r.resourceCode} className="group relative overflow-hidden rounded-[40px] border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl transition-all hover:border-indigo-500/30">
             <div className="mb-6 flex items-start justify-between">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
                 <Building2 size={24} />
@@ -465,8 +581,12 @@ function ResourceManagementSection() {
                 Edit Details
               </button>
               <button
-                onClick={() => handleDeleteResource(r.id)}
-                className="rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-slate-400 transition-all hover:text-red-400"
+                onClick={() => {
+                  if (confirm(`Are you sure you want to delete "${r.name}"? This action cannot be undone.`)) {
+                    handleDeleteResource(r);
+                  }
+                }}
+                className="rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-slate-400 transition-all hover:text-red-400 hover:border-red-400/30 hover:bg-red-400/5"
               >
                 <Trash2 size={16} />
               </button>
@@ -479,7 +599,10 @@ function ResourceManagementSection() {
         open={modalOpen}
         onClose={handleCloseModal}
         onSave={handleSaveResource}
+        onDelete={handleDeleteResource}
         initialData={editingResource}
+        saving={savingResource}
+        saveError={saveError}
       />
     </div>
   );

@@ -1,71 +1,67 @@
-import React, { useState } from "react";
-import { Wrench, Search, Plus, Calendar, ShieldCheck, Zap, Info } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Wrench, Search, Calendar, ShieldCheck, Zap, Info } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import BookingModal from "./BookingModal";
+import api from "../../api/axiosConfig";
 
 const EquipmentList = () => {
-  const [resources] = useState([
-    {
-      id: 1,
-      name: "Lecture Hall A",
-      type: "Hall",
-      capacity: 100,
-      status: "ACTIVE",
-    },
-    {
-      id: 2,
-      name: "Projector X",
-      type: "Equipment",
-      capacity: 1,
-      status: "ACTIVE",
-      desc: "High-definition laser projector with wireless connectivity.",
-      location: "Media Lab"
-    },
-    {
-      id: 3,
-      name: "Camera Kit",
-      type: "Equipment",
-      capacity: 1,
-      status: "ACTIVE",
-      desc: "Sony Alpha kit with 24-70mm lens and tripod.",
-      location: "Equipment Room"
-    },
-    {
-      id: 4,
-      name: "VR Headset",
-      type: "Equipment",
-      capacity: 1,
-      status: "MAINTENANCE",
-      desc: "Oculus Quest 2 for immersive simulations.",
-      location: "CS Lab"
-    },
-    {
-      id: 5,
-      name: "3D Printer",
-      type: "Equipment",
-      capacity: 1,
-      status: "ACTIVE",
-      desc: "Industrial grade 3D printer for rapid prototyping.",
-      location: "Innovation Hub"
-    },
-    {
-      id: 6,
-      name: "Microphone Array",
-      type: "Equipment",
-      capacity: 1,
-      status: "OUT_OF_SERVICE",
-      desc: "Professional wireless mic system for large halls.",
-      location: "Auditorium"
-    }
-  ]);
-
+  const [resources, setResources] = useState([]);
   const [selectedResource, setSelectedResource] = useState(null);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const equipmentList = resources.filter(
-    (r) => r.type === "Equipment" && r.name.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchEquipment = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await api.get("/api/resource/equipment");
+
+        if (!isMounted) {
+          return;
+        }
+
+        const normalizedResources = (response.data ?? []).map((resource, index) => ({
+          ...resource,
+          resourceCode: resource.resourceCode || `EQP-${String(index + 1).padStart(3, "0")}`,
+          name: resource.name || "Unnamed Equipment",
+          description: resource.description || "Standard campus equipment available for academic and research purposes.",
+          location: resource.location || "Central Stores",
+          status: resource.status || "ACTIVE",
+          type: resource.type || "Equipment",
+        }));
+
+        setResources(normalizedResources);
+      } catch (fetchError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError("Unable to load equipment from the backend right now.");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchEquipment();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const equipmentList = useMemo(() => {
+    return resources.filter((resource) =>
+      resource.name.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [resources, search]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -111,7 +107,15 @@ const EquipmentList = () => {
 
         {/* Equipment Grid */}
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {equipmentList.length === 0 ? (
+          {loading ? (
+            <div className="col-span-full py-20 text-center text-slate-500">
+              Loading equipment...
+            </div>
+          ) : error ? (
+            <div className="col-span-full py-20 text-center text-red-400">
+              {error}
+            </div>
+          ) : equipmentList.length === 0 ? (
             <div className="col-span-full py-20 text-center">
               <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-white/5 text-slate-600">
                 <Wrench size={32} />
@@ -121,20 +125,20 @@ const EquipmentList = () => {
             </div>
           ) : (
             equipmentList.map((item) => (
-              <div key={item.id} className="group relative flex flex-col overflow-hidden rounded-[32px] border border-white/5 bg-slate-900/40 backdrop-blur-xl transition-all hover:border-indigo-500/30 hover:bg-slate-900/60">
+              <div key={item.id || item.resourceCode} className="group relative flex flex-col overflow-hidden rounded-[32px] border border-white/5 bg-slate-900/40 backdrop-blur-xl transition-all hover:border-indigo-500/30 hover:bg-slate-900/60">
                 <div className="p-8">
                   <div className="mb-6 flex items-start justify-between">
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">
                       <Wrench size={24} />
                     </div>
                     <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold tracking-wider ${getStatusColor(item.status)}`}>
-                      {item.status}
+                      {item.status.replace(/_/g, " ")}
                     </span>
                   </div>
 
                   <h3 className="text-xl font-bold text-white mb-2">{item.name}</h3>
                   <p className="text-sm text-slate-400 leading-relaxed mb-6 line-clamp-2">
-                    {item.desc || "Standard campus equipment available for academic and research purposes."}
+                    {item.description}
                   </p>
 
                   <div className="space-y-3 border-t border-white/5 pt-6">

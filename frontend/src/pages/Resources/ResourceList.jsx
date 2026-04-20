@@ -1,38 +1,82 @@
-import { useMemo, useState } from "react";
-import { Search, Plus, ChevronLeft, ChevronRight, Building2, MapPin, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, ChevronLeft, ChevronRight, Building2, MapPin, Users } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ResourceModal from "./ResourceModal";
 import BookingModal from "./BookingModal";
+import api from "../../api/axiosConfig";
 
 const PER_PAGE = 6;
 
-const initialResources = [
-  { id: 1, name: "Lecture Hall A", type: "Lecture Hall", location: "1st Floor", capacity: 120, status: "ACTIVE", util: 87 },
-  { id: 2, name: "Computer Lab 1", type: "Lab", location: "3rd Floor", capacity: 40, status: "ACTIVE", util: 63 },
-  { id: 3, name: "Meeting Room B", type: "Meeting Room", location: "2nd Floor", capacity: 12, status: "OUT_OF_SERVICE", util: 0 },
-  { id: 4, name: "Sports Complex", type: "Sports", location: "Ground Floor", capacity: 200, status: "ACTIVE", util: 45 },
-  { id: 5, name: "Research Lab 2", type: "Lab", location: "4th Floor", capacity: 25, status: "MAINTENANCE", util: 30 },
-  { id: 6, name: "Conference Room A", type: "Meeting Room", location: "2nd Floor", capacity: 20, status: "ACTIVE", util: 74 },
-];
-
 export default function ResourceList() {
-  const [resources, setResources] = useState(initialResources);
+  const [resources, setResources] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [selectedResource, setSelectedResource] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchResources = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await api.get("/api/resource");
+
+        if (!isMounted) {
+          return;
+        }
+
+        const normalizedResources = (response.data ?? []).map((resource, index) => ({
+          ...resource,
+          resourceCode: resource.resourceCode || `RES-${String(index + 1).padStart(3, "0")}`,
+          name: resource.name || "Unnamed Resource",
+          type: resource.type || "Unknown",
+          location: resource.location || "Not specified",
+          capacity: resource.capacity ?? 0,
+          status: resource.status || "ACTIVE",
+        }));
+
+        setResources(normalizedResources);
+      } catch (fetchError) {
+        if (!isMounted) {
+          return;
+        }
+
+        setError("Unable to load resources from the backend right now.");
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchResources();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   /* FILTER */
   const filtered = useMemo(() => {
     return resources.filter(
       (r) =>
-        r.name.toLowerCase().includes(search.toLowerCase()) &&
+        (r.name.toLowerCase().includes(search.toLowerCase()) ||
+          r.type.toLowerCase().includes(search.toLowerCase())) &&
         (statusFilter === "" || r.status === statusFilter)
     );
   }, [resources, search, statusFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
 
   /* PAGINATION */
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
@@ -66,13 +110,6 @@ export default function ResourceList() {
             <h1 className="text-4xl font-black tracking-tight text-white">Resource <span className="text-indigo-400">Management</span></h1>
             <p className="mt-2 text-slate-400">Monitor and manage all campus facilities and equipment in real-time.</p>
           </div>
-          <button 
-            onClick={() => setModalOpen(true)}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white transition-all hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)]"
-          >
-            <Plus size={18} />
-            Add Resource
-          </button>
         </div>
 
         {/* Controls Section */}
@@ -120,7 +157,19 @@ export default function ResourceList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {current.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                      Loading resources...
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-12 text-center text-red-400">
+                      {error}
+                    </td>
+                  </tr>
+                ) : current.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center gap-2">
@@ -131,7 +180,7 @@ export default function ResourceList() {
                   </tr>
                 ) : (
                   current.map((r) => (
-                    <tr key={r.id} className="group transition-colors hover:bg-white/[0.02]">
+                    <tr key={r.id || r.resourceCode} className="group transition-colors hover:bg-white/[0.02]">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 font-bold">
@@ -139,7 +188,7 @@ export default function ResourceList() {
                           </div>
                           <div>
                             <div className="font-bold text-white">{r.name}</div>
-                            <div className="text-[10px] font-medium text-slate-500 uppercase">RES-{String(r.id).padStart(3, "0")}</div>
+                            <div className="text-[10px] font-medium text-slate-500 uppercase">{r.resourceCode}</div>
                           </div>
                         </div>
                       </td>

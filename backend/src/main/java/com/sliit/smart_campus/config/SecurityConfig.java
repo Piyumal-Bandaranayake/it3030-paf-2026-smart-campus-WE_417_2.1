@@ -2,6 +2,7 @@ package com.sliit.smart_campus.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -32,6 +33,7 @@ public class SecurityConfig {
             // Configure API endpoint permissions
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/login/**", "/oauth2/**", "/logout").permitAll() // Allow everyone to access authentication endpoints
+                .requestMatchers(HttpMethod.GET, "/api/resource", "/api/resource/**", "/api/resources", "/api/resources/**").permitAll()
                 .anyRequest().authenticated() // All other requests must be authenticated
             )
             // Configure Google OAuth login
