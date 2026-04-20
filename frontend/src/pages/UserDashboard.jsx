@@ -13,40 +13,306 @@ import {
   AlertCircle,
   BarChart3,
   Plus,
+  Ticket,
+  RefreshCw,
+  Tag,
+  MapPin,
+  AlertTriangle,
+  Paperclip,
+  Search,
+  InboxIcon,
 } from "lucide-react";
 
+// ── Static data ───────────────────────────────────────────────────────────────
+
 const quickActions = [
-  { icon: Building2, label: "Book a Resource", color: "indigo", bg: "rgba(99,102,241,0.1)" },
-  { icon: Wrench,    label: "Report Issue",    color: "amber",  bg: "rgba(245,158,11,0.1)" },
-  { icon: CalendarCheck, label: "My Bookings", color: "emerald", bg: "rgba(34,197,94,0.1)"  },
-  { icon: Bell,      label: "Notifications",   color: "pink",   bg: "rgba(236,72,153,0.1)" },
+  { icon: Building2,    label: "Book a Resource", color: "indigo",  bg: "rgba(99,102,241,0.1)"  },
+  { icon: Wrench,       label: "Report Issue",    color: "amber",   bg: "rgba(245,158,11,0.1)"  },
+  { icon: CalendarCheck,label: "My Bookings",     color: "emerald", bg: "rgba(34,197,94,0.1)"   },
+  { icon: Bell,         label: "Notifications",   color: "pink",    bg: "rgba(236,72,153,0.1)"  },
 ];
 
 const recentActivity = [
-  { icon: CheckCircle2, color: "text-emerald-400", text: "Room 204 booking confirmed",   time: "2 min ago"  },
-  { icon: AlertCircle,  color: "text-amber-400",  text: "Maintenance ticket #45 updated", time: "1 hr ago"  },
-  { icon: CalendarCheck,color: "text-indigo-400", text: "Lab B reservation approved",   time: "3 hrs ago"  },
-  { icon: Bell,         color: "text-pink-400",   text: "Reminder: Meeting at 3 PM",    time: "5 hrs ago"  },
+  { icon: CheckCircle2,  color: "text-emerald-400", text: "Room 204 booking confirmed",    time: "2 min ago"  },
+  { icon: AlertCircle,   color: "text-amber-400",   text: "Maintenance ticket #45 updated",time: "1 hr ago"   },
+  { icon: CalendarCheck, color: "text-indigo-400",  text: "Lab B reservation approved",    time: "3 hrs ago"  },
+  { icon: Bell,          color: "text-pink-400",    text: "Reminder: Meeting at 3 PM",     time: "5 hrs ago"  },
 ];
 
 const stats = [
-  { label: "Active Bookings",   value: "3",  icon: CalendarCheck, color: "indigo" },
-  { label: "Open Tickets",      value: "1",  icon: Wrench,        color: "amber" },
-  { label: "Resources Used",    value: "12", icon: Building2,     color: "emerald" },
-  { label: "Notifications",     value: "5",  icon: Bell,          color: "pink" },
+  { label: "Active Bookings", value: "3",  icon: CalendarCheck, color: "indigo"  },
+  { label: "Open Tickets",    value: "1",  icon: Wrench,        color: "amber"   },
+  { label: "Resources Used",  value: "12", icon: Building2,     color: "emerald" },
+  { label: "Notifications",   value: "5",  icon: Bell,          color: "pink"    },
 ];
+
+// ── Status badge config ────────────────────────────────────────────────────────
+
+const STATUS_CONFIG = {
+  Open:        { bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.4)",  text: "#818cf8" },
+  "In Progress":{ bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)",  text: "#fbbf24" },
+  Resolved:    { bg: "rgba(34,197,94,0.15)",   border: "rgba(34,197,94,0.4)",   text: "#4ade80" },
+  Closed:      { bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.4)", text: "#94a3b8" },
+};
+
+const PRIORITY_CONFIG = {
+  low:      { label: "Low",      color: "#22c55e" },
+  medium:   { label: "Medium",   color: "#f59e0b" },
+  high:     { label: "High",     color: "#f97316" },
+  critical: { label: "Critical", color: "#ef4444" },
+};
+
+// ── My Tickets view ────────────────────────────────────────────────────────────
+
+function MyTicketsView() {
+  const [tickets, setTickets]   = useState([]);
+  const [search,  setSearch]    = useState("");
+  const [filter,  setFilter]    = useState("All");
+
+  const load = () => {
+    const stored = JSON.parse(localStorage.getItem("sc_tickets") || "[]");
+    setTickets(stored);
+  };
+
+  useEffect(() => {
+    load();
+    window.addEventListener("ticket-submitted", load);
+    return () => window.removeEventListener("ticket-submitted", load);
+  }, []);
+
+  const statuses = ["All", "Open", "In Progress", "Resolved", "Closed"];
+
+  const visible = tickets.filter((t) => {
+    const matchFilter = filter === "All" || t.status === filter;
+    const q = search.toLowerCase();
+    const matchSearch =
+      !q ||
+      t.id.toLowerCase().includes(q) ||
+      t.resource.toLowerCase().includes(q) ||
+      t.category.toLowerCase().includes(q) ||
+      t.description.toLowerCase().includes(q);
+    return matchFilter && matchSearch;
+  });
+
+  const counts = statuses.reduce((acc, s) => {
+    acc[s] = s === "All" ? tickets.length : tickets.filter((t) => t.status === s).length;
+    return acc;
+  }, {});
+
+  return (
+    <section
+      style={{
+        borderRadius: "1.5rem",
+        border: "1px solid rgba(255,255,255,0.05)",
+        background: "rgba(15,23,42,0.4)",
+        backdropFilter: "blur(16px)",
+        padding: "2rem",
+      }}
+    >
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem", gap: "1rem", flexWrap: "wrap" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#fff" }}>My Tickets</h2>
+          <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "#64748b" }}>
+            {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} raised
+          </p>
+        </div>
+        <button
+          onClick={load}
+          title="Refresh"
+          style={{
+            display: "flex", alignItems: "center", gap: "0.4rem",
+            padding: "0.45rem 0.875rem",
+            borderRadius: "0.625rem",
+            border: "1px solid rgba(255,255,255,0.07)",
+            background: "rgba(255,255,255,0.04)",
+            color: "#94a3b8", fontSize: "0.75rem", fontWeight: 700,
+            cursor: "pointer", transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.background = "rgba(255,255,255,0.1)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "#94a3b8"; e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
+        >
+          <RefreshCw size={13} /> Refresh
+        </button>
+      </div>
+
+      {/* Filter chips */}
+      <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+        {statuses.map((s) => {
+          const isActive = filter === s;
+          const cfg = s !== "All" ? STATUS_CONFIG[s] : null;
+          return (
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              style={{
+                display: "flex", alignItems: "center", gap: "0.35rem",
+                padding: "0.3rem 0.75rem",
+                borderRadius: "9999px",
+                border: `1px solid ${isActive ? (cfg ? cfg.border : "rgba(99,102,241,0.5)") : "rgba(255,255,255,0.07)"}`,
+                background: isActive ? (cfg ? cfg.bg : "rgba(99,102,241,0.12)") : "rgba(255,255,255,0.03)",
+                color: isActive ? (cfg ? cfg.text : "#818cf8") : "#64748b",
+                fontSize: "0.7rem", fontWeight: 700, cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              {s}
+              <span style={{
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                minWidth: "1.1rem", height: "1.1rem",
+                borderRadius: "9999px",
+                background: isActive ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.06)",
+                fontSize: "0.6rem", fontWeight: 800,
+              }}>
+                {counts[s]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Search */}
+      <div style={{ position: "relative", marginBottom: "1.25rem" }}>
+        <Search size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#475569", pointerEvents: "none" }} />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by ID, resource, or category…"
+          style={{
+            width: "100%", padding: "0.55rem 0.875rem 0.55rem 2.1rem",
+            borderRadius: "0.625rem",
+            border: "1px solid rgba(255,255,255,0.07)",
+            background: "rgba(255,255,255,0.04)",
+            color: "#e2e8f0", fontSize: "0.8rem",
+            outline: "none", boxSizing: "border-box",
+          }}
+          onFocus={(e) => { e.target.style.borderColor = "rgba(99,102,241,0.5)"; e.target.style.background = "rgba(99,102,241,0.05)"; }}
+          onBlur={(e)  => { e.target.style.borderColor = "rgba(255,255,255,0.07)"; e.target.style.background = "rgba(255,255,255,0.04)"; }}
+        />
+      </div>
+
+      {/* Ticket list */}
+      {visible.length === 0 ? (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "3rem 1rem", gap: "0.75rem", color: "#334155" }}>
+          <InboxIcon size={40} strokeWidth={1.2} />
+          <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600 }}>
+            {tickets.length === 0 ? "No tickets yet. Raise your first ticket using the button below!" : "No tickets match your filter."}
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          {visible.map((ticket) => {
+            const statusCfg   = STATUS_CONFIG[ticket.status]   || STATUS_CONFIG["Open"];
+            const priorityCfg = PRIORITY_CONFIG[ticket.priority] || { label: ticket.priority, color: "#94a3b8" };
+            const date = new Date(ticket.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+            const time = new Date(ticket.createdAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+            return (
+              <div
+                key={ticket.id}
+                style={{
+                  borderRadius: "1rem",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  background: "rgba(255,255,255,0.03)",
+                  padding: "1rem 1.25rem",
+                  transition: "border-color 0.15s, background 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(99,102,241,0.25)"; e.currentTarget.style.background = "rgba(99,102,241,0.04)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+              >
+                {/* Row 1: ID + status + priority */}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.6rem" }}>
+                  <span style={{
+                    fontFamily: "'Courier New', monospace",
+                    fontSize: "0.75rem", fontWeight: 800, letterSpacing: "0.05em",
+                    color: "#818cf8",
+                    background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)",
+                    padding: "0.15rem 0.5rem", borderRadius: "0.35rem",
+                  }}>
+                    {ticket.id}
+                  </span>
+
+                  {/* Status badge */}
+                  <span style={{
+                    fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                    padding: "0.15rem 0.5rem", borderRadius: "9999px",
+                    background: statusCfg.bg, border: `1px solid ${statusCfg.border}`, color: statusCfg.text,
+                  }}>
+                    {ticket.status}
+                  </span>
+
+                  {/* Priority dot */}
+                  <span style={{
+                    display: "flex", alignItems: "center", gap: "0.25rem",
+                    fontSize: "0.65rem", fontWeight: 700,
+                    color: priorityCfg.color,
+                  }}>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: priorityCfg.color, display: "inline-block" }} />
+                    {priorityCfg.label}
+                  </span>
+
+                  {/* Attachment count */}
+                  {ticket.attachmentCount > 0 && (
+                    <span style={{ display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.65rem", color: "#475569", marginLeft: "auto" }}>
+                      <Paperclip size={11} /> {ticket.attachmentCount}
+                    </span>
+                  )}
+                </div>
+
+                {/* Row 2: Resource & category */}
+                <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap", marginBottom: "0.5rem" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.78rem", fontWeight: 700, color: "#e2e8f0" }}>
+                    <MapPin size={12} style={{ color: "#6366f1", flexShrink: 0 }} />
+                    {ticket.resource}{ticket.location ? ` · ${ticket.location}` : ""}
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.72rem", color: "#64748b" }}>
+                    <Tag size={11} /> {ticket.category}
+                  </span>
+                </div>
+
+                {/* Row 3: Description snippet */}
+                <p style={{
+                  margin: "0 0 0.6rem",
+                  fontSize: "0.775rem", color: "#64748b", lineHeight: 1.5,
+                  overflow: "hidden", display: "-webkit-box",
+                  WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                }}>
+                  {ticket.description}
+                </p>
+
+                {/* Row 4: Date */}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.65rem", color: "#334155" }}>
+                  <Clock size={10} /> Raised on {date} at {time}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
 
 export default function UserDashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [greeting, setGreeting] = useState("Good day");
+  const [user,        setUser]       = useState(null);
+  const [greeting,    setGreeting]   = useState("Good day");
+  const [activeView,  setActiveView] = useState("dashboard"); // "dashboard" | "tickets"
+  const [ticketCount, setTicketCount]= useState(0);
   const recentActivityRef = useRef(null);
+
+  // Load ticket count for the sidebar badge
+  const loadTicketCount = () => {
+    const t = JSON.parse(localStorage.getItem("sc_tickets") || "[]");
+    setTicketCount(t.filter((x) => x.status === "Open" || x.status === "In Progress").length);
+  };
 
   useEffect(() => {
     const hour = new Date().getHours();
-    if (hour < 12) setGreeting("Good morning");
+    if (hour < 12)      setGreeting("Good morning");
     else if (hour < 17) setGreeting("Good afternoon");
-    else setGreeting("Good evening");
+    else                setGreeting("Good evening");
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("login_success") === "true") {
@@ -55,8 +321,7 @@ export default function UserDashboard() {
           .then((res) => {
             const userData = res.data;
             sessionStorage.setItem("user", JSON.stringify(userData));
-            
-            // Redirect based on role
+            window.dispatchEvent(new Event("auth-change"));
             if (userData.role === "ADMIN") {
               navigate("/admin-dashboard");
             } else {
@@ -79,64 +344,118 @@ export default function UserDashboard() {
         navigate("/login");
       }
     }
+
+    loadTicketCount();
+    window.addEventListener("ticket-submitted", loadTicketCount);
+    return () => window.removeEventListener("ticket-submitted", loadTicketCount);
   }, [navigate]);
 
   const handleLogout = () => {
     sessionStorage.removeItem("user");
+    window.dispatchEvent(new Event("auth-change"));
     navigate("/");
   };
 
   const handleSidebarNavigation = (label) => {
-    if (label === "Resources") {
-      navigate("/resources");
-    }
-
-    if (label === "Alerts") {
-      recentActivityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (label === "Resources")  { navigate("/resources"); return; }
+    if (label === "Alerts")     { setActiveView("dashboard"); setTimeout(() => recentActivityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); return; }
+    if (label === "My Tickets") { setActiveView("tickets");   return; }
+    if (label === "Dashboard")  { setActiveView("dashboard"); return; }
   };
 
   if (!user) return null;
 
   const firstName = user.name ? user.name.split(" ")[0] : "User";
 
+  const navItems = [
+    { icon: BarChart3,     label: "Dashboard"  },
+    { icon: Building2,     label: "Resources"  },
+    { icon: CalendarCheck, label: "Bookings"   },
+    { icon: Wrench,        label: "Maintenance"},
+    { icon: Bell,          label: "Alerts"     },
+  ];
+
   return (
     <div className="flex min-h-screen bg-[#020617] text-white selection:bg-indigo-500/30">
       {/* ── Sidebar ── */}
-      <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-white/5 bg-slate-900/50 backdrop-blur-xl transition-transform lg:translate-x-0">
-        <div className="flex h-20 items-center gap-3 px-6">
+      <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-white/5 bg-slate-900/50 backdrop-blur-xl transition-transform lg:translate-x-0"
+        style={{ display: "flex", flexDirection: "column" }}
+      >
+        {/* Logo */}
+        <div className="flex h-20 items-center gap-3 px-6" style={{ flexShrink: 0 }}>
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/20">
             <Building2 size={20} color="white" />
           </div>
           <span className="text-lg font-bold tracking-tight">Smart Campus</span>
         </div>
 
-        <nav className="mt-8 space-y-1 px-3">
-          <div className="mb-4 px-3 text-xs font-bold uppercase tracking-widest text-slate-500">Menu</div>
-          {[
-            { icon: BarChart3,     label: "Dashboard",   active: true  },
-            { icon: Building2,     label: "Resources",   active: false },
-            { icon: CalendarCheck, label: "Bookings",    active: false },
-            { icon: Wrench,        label: "Maintenance", active: false },
-            { icon: Bell,          label: "Alerts",      active: false },
-          ].map(({ icon: Icon, label, active }) => (
+        {/* Nav — scrollable middle area */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "0 0.75rem" }}>
+          {/* Main menu */}
+          <nav className="mt-8 space-y-1">
+            <div className="mb-4 px-3 text-xs font-bold uppercase tracking-widest text-slate-500">Menu</div>
+            {navItems.map(({ icon: Icon, label }) => {
+              const active = activeView === "dashboard" && label === "Dashboard";
+              return (
+                <button
+                  key={label}
+                  onClick={() => handleSidebarNavigation(label)}
+                  className={`group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
+                    active
+                      ? "bg-indigo-500/10 text-indigo-400"
+                      : "text-slate-400 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <Icon size={18} />
+                  <span>{label}</span>
+                  {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* ── My Tickets section ── */}
+          <nav className="mt-6 space-y-1">
+            <div className="mb-4 px-3 text-xs font-bold uppercase tracking-widest text-slate-500">Support</div>
             <button
-              key={label}
-              onClick={() => handleSidebarNavigation(label)}
+              onClick={() => handleSidebarNavigation("My Tickets")}
               className={`group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-                active 
-                  ? "bg-indigo-500/10 text-indigo-400" 
+                activeView === "tickets"
+                  ? "bg-indigo-500/10 text-indigo-400"
                   : "text-slate-400 hover:bg-white/5 hover:text-white"
               }`}
             >
-              <Icon size={18} />
-              <span>{label}</span>
-              {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />}
-            </button>
-          ))}
-        </nav>
+              <Ticket size={18} />
+              <span>My Tickets</span>
 
-        <div className="absolute bottom-0 w-full p-4">
+              {/* Active dot */}
+              {activeView === "tickets" && (
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
+              )}
+
+              {/* Badge: open / in-progress count */}
+              {activeView !== "tickets" && ticketCount > 0 && (
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    minWidth: "1.25rem", height: "1.25rem",
+                    borderRadius: "9999px",
+                    background: "rgba(99,102,241,0.2)",
+                    border: "1px solid rgba(99,102,241,0.4)",
+                    color: "#818cf8",
+                    fontSize: "0.6rem", fontWeight: 800,
+                  }}
+                >
+                  {ticketCount}
+                </span>
+              )}
+            </button>
+          </nav>
+        </div>
+
+        {/* User card + logout — pinned to bottom */}
+        <div style={{ flexShrink: 0, padding: "1rem" }}>
           <div className="mb-4 rounded-2xl bg-white/5 p-4">
             <div className="flex items-center gap-3">
               {user.profilePicture ? (
@@ -151,12 +470,11 @@ export default function UserDashboard() {
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{user.role || "Student"}</div>
               </div>
             </div>
-            <button 
+            <button
               onClick={handleLogout}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white/5 py-2 text-xs font-bold text-slate-400 transition-all hover:bg-red-500/10 hover:text-red-400"
             >
-              <LogOut size={14} />
-              Logout
+              <LogOut size={14} /> Logout
             </button>
           </div>
         </div>
@@ -167,8 +485,14 @@ export default function UserDashboard() {
         {/* Top bar */}
         <header className="mb-12 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-black text-white">{greeting}, {firstName} 👋</h1>
-            <p className="mt-1 text-slate-400">Here's what's happening on campus today.</p>
+            <h1 className="text-3xl font-black text-white">
+              {activeView === "tickets" ? "My Tickets 🎫" : `${greeting}, ${firstName} 👋`}
+            </h1>
+            <p className="mt-1 text-slate-400">
+              {activeView === "tickets"
+                ? "Track the status of all your submitted support tickets."
+                : "Here's what's happening on campus today."}
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <button className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-slate-400 transition-all hover:bg-white/10 hover:text-white">
@@ -178,112 +502,120 @@ export default function UserDashboard() {
           </div>
         </header>
 
-        {/* Stats row */}
-        <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="group relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-xl transition-all hover:border-white/10">
-              <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-${color}-500/10 text-${color}-400 group-hover:bg-${color}-500/20 transition-colors`}>
-                <Icon size={24} strokeWidth={1.8} />
-              </div>
-              <div className="text-3xl font-black text-white">{value}</div>
-              <div className="text-sm font-medium text-slate-500">{label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Content grid */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          {/* Quick Actions */}
-          <section ref={recentActivityRef} className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl">
-            <div className="mb-8 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">Quick Actions</h2>
-              <button className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-indigo-500">
-                <Plus size={14} /> New
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {quickActions.map(({ icon: Icon, label, color, bg }) => (
-                <button
-                  key={label}
-                  className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-white/5 p-4 text-left transition-all hover:border-indigo-500/30 hover:bg-indigo-500/5"
-                >
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-${color}-500/10 text-${color}-400 group-hover:scale-110 transition-transform`}>
-                    <Icon size={20} />
+        {activeView === "tickets" ? (
+          /* ─── My Tickets view ─── */
+          <MyTicketsView />
+        ) : (
+          /* ─── Default dashboard view ─── */
+          <>
+            {/* Stats row */}
+            <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {stats.map(({ label, value, icon: Icon, color }) => (
+                <div key={label} className="group relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-xl transition-all hover:border-white/10">
+                  <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-${color}-500/10 text-${color}-400 group-hover:bg-${color}-500/20 transition-colors`}>
+                    <Icon size={24} strokeWidth={1.8} />
                   </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-bold text-white">{label}</div>
-                  </div>
-                  <ChevronRight size={14} className="text-slate-600 group-hover:translate-x-1 transition-transform" />
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* Recent Activity */}
-          <section className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl">
-            <div className="mb-8 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">Recent Activity</h2>
-              <button className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors">View all</button>
-            </div>
-            <ul className="space-y-6">
-              {recentActivity.map(({ icon: Icon, color, text, time }, i) => (
-                <li key={i} className="flex items-start gap-4">
-                  <div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 ${color}`}>
-                    <Icon size={16} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-slate-300">{text}</div>
-                    <div className="mt-1 flex items-center gap-1 text-[10px] font-medium text-slate-500">
-                      <Clock size={10} /> {time}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </div>
-
-        {/* Profile Summary Card */}
-        <section className="mt-8 rounded-3xl border border-white/5 bg-gradient-to-br from-indigo-600/20 to-blue-600/20 p-8 backdrop-blur-xl">
-          <div className="flex flex-col gap-8 md:flex-row md:items-center">
-            <div className="relative">
-              {user.profilePicture ? (
-                <img src={user.profilePicture} alt="avatar" className="h-24 w-24 rounded-[32px] border-4 border-indigo-500/30 object-cover" />
-              ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-[32px] bg-indigo-500/20 text-indigo-400">
-                  <User size={40} />
+                  <div className="text-3xl font-black text-white">{value}</div>
+                  <div className="text-sm font-medium text-slate-500">{label}</div>
                 </div>
-              )}
-              <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-green-500 border-4 border-slate-900">
-                <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
-              </div>
+              ))}
             </div>
-            <div className="flex-1">
-              <div className="text-3xl font-black text-white">{user.name}</div>
-              <div className="mt-1 text-indigo-300 font-medium">{user.email}</div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-full bg-indigo-500/20 px-4 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-400 border border-indigo-500/30">
-                  {user.role || "Student"}
-                </span >
-                <span className="rounded-full bg-white/5 px-4 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400 border border-white/10">
-                  {user.provider || "Google"} Account
-                </span>
-              </div>
+
+            {/* Content grid */}
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+              {/* Quick Actions */}
+              <section ref={recentActivityRef} className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl">
+                <div className="mb-8 flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-white">Quick Actions</h2>
+                  <button className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-indigo-500">
+                    <Plus size={14} /> New
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {quickActions.map(({ icon: Icon, label, color }) => (
+                    <button
+                      key={label}
+                      className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-white/5 p-4 text-left transition-all hover:border-indigo-500/30 hover:bg-indigo-500/5"
+                    >
+                      <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-${color}-500/10 text-${color}-400 group-hover:scale-110 transition-transform`}>
+                        <Icon size={20} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-bold text-white">{label}</div>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-600 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* Recent Activity */}
+              <section className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl">
+                <div className="mb-8 flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-white">Recent Activity</h2>
+                  <button className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors">View all</button>
+                </div>
+                <ul className="space-y-6">
+                  {recentActivity.map(({ icon: Icon, color, text, time }, i) => (
+                    <li key={i} className="flex items-start gap-4">
+                      <div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 ${color}`}>
+                        <Icon size={16} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-slate-300">{text}</div>
+                        <div className="mt-1 flex items-center gap-1 text-[10px] font-medium text-slate-500">
+                          <Clock size={10} /> {time}
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             </div>
-            <div className="flex flex-col gap-4 border-t border-white/5 pt-8 md:border-t-0 md:border-l md:pt-0 md:pl-8">
-              <div className="flex items-center justify-between gap-12">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Member since</span>
-                <span className="text-sm font-bold text-white">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}</span>
+
+            {/* Profile Summary Card */}
+            <section className="mt-8 rounded-3xl border border-white/5 bg-gradient-to-br from-indigo-600/20 to-blue-600/20 p-8 backdrop-blur-xl">
+              <div className="flex flex-col gap-8 md:flex-row md:items-center">
+                <div className="relative">
+                  {user.profilePicture ? (
+                    <img src={user.profilePicture} alt="avatar" className="h-24 w-24 rounded-[32px] border-4 border-indigo-500/30 object-cover" />
+                  ) : (
+                    <div className="flex h-24 w-24 items-center justify-center rounded-[32px] bg-indigo-500/20 text-indigo-400">
+                      <User size={40} />
+                    </div>
+                  )}
+                  <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-green-500 border-4 border-slate-900">
+                    <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="text-3xl font-black text-white">{user.name}</div>
+                  <div className="mt-1 text-indigo-300 font-medium">{user.email}</div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="rounded-full bg-indigo-500/20 px-4 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-400 border border-indigo-500/30">
+                      {user.role || "Student"}
+                    </span>
+                    <span className="rounded-full bg-white/5 px-4 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400 border border-white/10">
+                      {user.provider || "Google"} Account
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-4 border-t border-white/5 pt-8 md:border-t-0 md:border-l md:pt-0 md:pl-8">
+                  <div className="flex items-center justify-between gap-12">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Member since</span>
+                    <span className="text-sm font-bold text-white">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-12">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</span>
+                    <span className="flex items-center gap-2 text-sm font-bold text-green-400">
+                      <CheckCircle2 size={14} /> Active
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-between gap-12">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Status</span>
-                <span className="flex items-center gap-2 text-sm font-bold text-green-400">
-                  <CheckCircle2 size={14} /> Active
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
+            </section>
+          </>
+        )}
       </main>
     </div>
   );
