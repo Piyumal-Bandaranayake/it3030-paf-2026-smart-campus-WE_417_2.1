@@ -18,6 +18,7 @@ import {
   Loader2,
   CheckCircle2,
 } from "lucide-react";
+import api from "../api/axiosConfig";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -88,12 +89,28 @@ export default function RaiseTicketButton() {
 
   // ── handlers ────────────────────────────────────────────────────────────────
 
-  const handleOpen  = () => { setOpen(true);  setStatus("idle"); setErrorMsg(""); };
+  const handleOpen  = () => { 
+    setOpen(true);  
+    setStatus("idle"); 
+    setErrorMsg(""); 
+    
+    // Fetch logged user for email pre-fill
+    const stored = sessionStorage.getItem("user");
+    if (stored) {
+      const user = JSON.parse(stored);
+      setForm(f => ({ ...f, contactEmail: user.email || f.contactEmail }));
+    }
+  };
+
   const handleClose = () => {
     if (status === "submitting") return;
     setOpen(false);
     // keep form until success so user doesn't lose data on accidental close
-    if (status === "success") { setForm(emptyForm); setImages([]); setStatus("idle"); }
+    if (status === "success") { 
+      setForm(emptyForm); 
+      setImages([]); 
+      setStatus("idle"); 
+    }
   };
 
   const handleChange = (e) => {
@@ -146,43 +163,25 @@ export default function RaiseTicketButton() {
     setErrorMsg("");
 
     try {
-      // Build FormData for multipart upload (ready for real API)
+      const stored = sessionStorage.getItem("user");
+      const user = stored ? JSON.parse(stored) : null;
+
       const data = new FormData();
       Object.entries(form).forEach(([k, v]) => data.append(k, v));
       images.forEach(({ file }) => data.append("attachments", file));
+      data.append("userEmail", user?.email || "anonymous@campus.edu");
 
-      // ─── Replace this mock with your real API call ───────────────────────
-      // await axios.post("/api/tickets", data, { headers: { "Content-Type": "multipart/form-data" } });
-      await new Promise((res) => setTimeout(res, 1800)); // simulate network
-      // ─────────────────────────────────────────────────────────────────────
+      await api.post("/api/tickets", data, { 
+        headers: { "Content-Type": "multipart/form-data" } 
+      });
 
-      // Generate ticket ID and persist to localStorage
-      const ticketId = "TKT-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-      const newTicket = {
-        id: ticketId,
-        resource: form.resource,
-        location: form.location,
-        category: form.category,
-        priority: form.priority,
-        description: form.description,
-        contactName: form.contactName,
-        contactEmail: form.contactEmail,
-        contactPhone: form.contactPhone,
-        attachmentCount: images.length,
-        status: "Open",
-        createdAt: new Date().toISOString(),
-      };
-
-      const existing = JSON.parse(localStorage.getItem("sc_tickets") || "[]");
-      localStorage.setItem("sc_tickets", JSON.stringify([newTicket, ...existing]));
-
-      // Notify sidebar panel
+      // Notify other components
       window.dispatchEvent(new Event("ticket-submitted"));
-
       setStatus("success");
     } catch (err) {
+      console.error("Ticket submission error:", err);
       setStatus("error");
-      setErrorMsg(err?.response?.data?.message || "Failed to submit ticket. Please try again.");
+      setErrorMsg(err?.response?.data?.message || err?.message || "Failed to submit ticket. Please try again.");
     }
   };
 

@@ -659,9 +659,13 @@ function TicketManagementSection() {
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [expandedId,     setExpandedId]     = useState(null);
 
-  const load = () => {
-    const stored = JSON.parse(localStorage.getItem("sc_tickets") || "[]");
-    setTickets(stored);
+  const load = async () => {
+    try {
+      const response = await api.get("/api/tickets");
+      setTickets(response.data || []);
+    } catch (err) {
+      console.error("Failed to load tickets:", err);
+    }
   };
 
   useEffect(() => {
@@ -670,21 +674,31 @@ function TicketManagementSection() {
     return () => window.removeEventListener("ticket-submitted", load);
   }, []);
 
-  const save = (updated) => {
-    localStorage.setItem("sc_tickets", JSON.stringify(updated));
-    setTickets(updated);
-    // Keep user dashboard panel in sync
-    window.dispatchEvent(new Event("ticket-submitted"));
+
+
+  const updateStatus = async (id, newStatus) => {
+    try {
+      await api.put(`/api/tickets/${id}/status`, { status: newStatus });
+      // Reload or update locally
+      setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
+      window.dispatchEvent(new Event("ticket-submitted"));
+    } catch (err) {
+      console.error("Failed to update status:", err);
+      alert("Failed to update status. Please try again.");
+    }
   };
 
-  const updateStatus = (id, newStatus) => {
-    save(tickets.map((t) => t.id === id ? { ...t, status: newStatus } : t));
-  };
-
-  const deleteTicket = (id) => {
+  const deleteTicket = async (id) => {
     if (!confirm("Delete this ticket? This cannot be undone.")) return;
-    save(tickets.filter((t) => t.id !== id));
-    if (expandedId === id) setExpandedId(null);
+    try {
+      await api.delete(`/api/tickets/${id}`);
+      setTickets(prev => prev.filter(t => t.id !== id));
+      if (expandedId === id) setExpandedId(null);
+      window.dispatchEvent(new Event("ticket-submitted"));
+    } catch (err) {
+      console.error("Failed to delete ticket:", err);
+      alert("Failed to delete ticket.");
+    }
   };
 
   const filtered = tickets.filter((t) => {
@@ -692,7 +706,7 @@ function TicketManagementSection() {
     const matchPriority = priorityFilter === "All" || t.priority === priorityFilter.toLowerCase();
     const q = search.toLowerCase();
     const matchSearch = !q ||
-      t.id.toLowerCase().includes(q)           ||
+      t.ticketId.toLowerCase().includes(q)     ||
       t.resource.toLowerCase().includes(q)     ||
       t.category.toLowerCase().includes(q)     ||
       (t.contactName  || "").toLowerCase().includes(q) ||
@@ -900,7 +914,7 @@ function TicketManagementSection() {
                   background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)",
                   padding: "0.15rem 0.5rem", borderRadius: "0.3rem", width: "fit-content",
                 }}>
-                  {ticket.id}
+                  {ticket.ticketId}
                 </span>
 
                 {/* Resource */}
@@ -1014,7 +1028,7 @@ function TicketManagementSection() {
                     </p>
                   </div>
 
-                  {/* Contact */}
+                   {/* Contact */}
                   <div>
                     <div style={{
                       fontSize: "0.63rem", fontWeight: 800,
@@ -1023,14 +1037,31 @@ function TicketManagementSection() {
                     }}>
                       Preferred Contact
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
                       {ticket.contactName  && <span style={{ fontSize: "0.8rem", color: "#cbd5e1" }}>👤 {ticket.contactName}</span>}
                       {ticket.contactEmail && <span style={{ fontSize: "0.8rem", color: "#cbd5e1" }}>✉️ {ticket.contactEmail}</span>}
                       {ticket.contactPhone && <span style={{ fontSize: "0.8rem", color: "#cbd5e1" }}>📞 {ticket.contactPhone}</span>}
-                      {!ticket.contactName && !ticket.contactEmail && !ticket.contactPhone && (
-                        <span style={{ fontSize: "0.75rem", color: "#475569" }}>No contact details provided.</span>
-                      )}
                     </div>
+                    
+                    {/* Images */}
+                    {ticket.images && ticket.images.length > 0 && (
+                      <div style={{ marginTop: "1rem" }}>
+                        <div style={{ fontSize: "0.63rem", fontWeight: 800, textTransform: "uppercase", color: "#475569", marginBottom: "0.4rem" }}>
+                          Attachments
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          {ticket.images.map((img, i) => (
+                            <a key={i} href={`http://localhost:8080${img}`} target="_blank" rel="noreferrer">
+                              <img 
+                                src={`http://localhost:8080${img}`} 
+                                alt="attachment" 
+                                style={{ width: 60, height: 60, objectFit: "cover", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.1)" }} 
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Footer meta */}
@@ -1043,9 +1074,9 @@ function TicketManagementSection() {
                     <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: "#475569" }}>
                       <Clock size={12} /> Raised: {date}
                     </span>
-                    {ticket.attachmentCount > 0 && (
+                    {ticket.images && ticket.images.length > 0 && (
                       <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: "#475569" }}>
-                        <Paperclip size={12} /> {ticket.attachmentCount} attachment{ticket.attachmentCount > 1 ? "s" : ""}
+                        <Paperclip size={12} /> {ticket.images.length} attachment{ticket.images.length > 1 ? "s" : ""}
                       </span>
                     )}
                     <span style={{ marginLeft: "auto", fontSize: "0.65rem", fontFamily: "'Courier New', monospace", color: "#334155" }}>

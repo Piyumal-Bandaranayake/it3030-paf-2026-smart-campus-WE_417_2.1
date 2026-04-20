@@ -22,6 +22,7 @@ import {
   Search,
   InboxIcon,
 } from "lucide-react";
+import api from "../api/axiosConfig";
 
 // ── Static data ───────────────────────────────────────────────────────────────
 
@@ -69,9 +70,17 @@ function MyTicketsView() {
   const [search,  setSearch]    = useState("");
   const [filter,  setFilter]    = useState("All");
 
-  const load = () => {
-    const stored = JSON.parse(localStorage.getItem("sc_tickets") || "[]");
-    setTickets(stored);
+  const load = async () => {
+    try {
+      const storedUser = sessionStorage.getItem("user");
+      if (!storedUser) return;
+      const user = JSON.parse(storedUser);
+      
+      const response = await api.get(`/api/tickets?email=${user.email}`);
+      setTickets(response.data || []);
+    } catch (err) {
+      console.error("Failed to load tickets:", err);
+    }
   };
 
   useEffect(() => {
@@ -87,7 +96,7 @@ function MyTicketsView() {
     const q = search.toLowerCase();
     const matchSearch =
       !q ||
-      t.id.toLowerCase().includes(q) ||
+      t.ticketId.toLowerCase().includes(q) ||
       t.resource.toLowerCase().includes(q) ||
       t.category.toLowerCase().includes(q) ||
       t.description.toLowerCase().includes(q);
@@ -228,7 +237,7 @@ function MyTicketsView() {
                     background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.25)",
                     padding: "0.15rem 0.5rem", borderRadius: "0.35rem",
                   }}>
-                    {ticket.id}
+                    {ticket.ticketId}
                   </span>
 
                   {/* Status badge */}
@@ -251,9 +260,9 @@ function MyTicketsView() {
                   </span>
 
                   {/* Attachment count */}
-                  {ticket.attachmentCount > 0 && (
+                  {ticket.images && ticket.images.length > 0 && (
                     <span style={{ display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.65rem", color: "#475569", marginLeft: "auto" }}>
-                      <Paperclip size={11} /> {ticket.attachmentCount}
+                      <Paperclip size={11} /> {ticket.images.length}
                     </span>
                   )}
                 </div>
@@ -279,9 +288,25 @@ function MyTicketsView() {
                   {ticket.description}
                 </p>
 
-                {/* Row 4: Date */}
-                <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.65rem", color: "#334155" }}>
-                  <Clock size={10} /> Raised on {date} at {time}
+                {/* Row 4: Images & Date */}
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "1rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.65rem", color: "#334155" }}>
+                    <Clock size={10} /> Raised on {date} at {time}
+                  </div>
+                  
+                  {ticket.images && ticket.images.length > 0 && (
+                    <div style={{ display: "flex", gap: "0.35rem" }}>
+                      {ticket.images.map((img, i) => (
+                        <a key={i} href={`http://localhost:8080${img}`} target="_blank" rel="noreferrer">
+                          <img 
+                            src={`http://localhost:8080${img}`} 
+                            alt="attachment" 
+                            style={{ width: 32, height: 32, objectFit: "cover", borderRadius: "0.35rem", border: "1px solid rgba(255,255,255,0.05)" }} 
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -303,9 +328,18 @@ export default function UserDashboard() {
   const recentActivityRef = useRef(null);
 
   // Load ticket count for the sidebar badge
-  const loadTicketCount = () => {
-    const t = JSON.parse(localStorage.getItem("sc_tickets") || "[]");
-    setTicketCount(t.filter((x) => x.status === "Open" || x.status === "In Progress").length);
+  const loadTicketCount = async () => {
+    try {
+      const storedUser = sessionStorage.getItem("user");
+      if (!storedUser) return;
+      const user = JSON.parse(storedUser);
+      
+      const response = await api.get(`/api/tickets?email=${user.email}`);
+      const tickets = response.data || [];
+      setTicketCount(tickets.filter((x) => x.status === "Open" || x.status === "In Progress").length);
+    } catch (err) {
+      console.error("Failed to load ticket count:", err);
+    }
   };
 
   useEffect(() => {
