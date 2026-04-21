@@ -21,7 +21,8 @@ import {
   Paperclip,
   Search,
   InboxIcon,
-  Trash2
+  Trash2,
+  Users
 } from "lucide-react";
 import api from "../api/axiosConfig";
 
@@ -63,6 +64,13 @@ const PRIORITY_CONFIG = {
   medium:   { label: "Medium",   color: "#f59e0b" },
   high:     { label: "High",     color: "#f97316" },
   critical: { label: "Critical", color: "#ef4444" },
+};
+
+const BOOKING_STATUS_CONFIG = {
+  Pending: { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)", text: "#fbbf24" },
+  Approved: { bg: "rgba(34,197,94,0.15)", border: "rgba(34,197,94,0.4)", text: "#4ade80" },
+  Rejected: { bg: "rgba(239,68,68,0.15)", border: "rgba(239,68,68,0.4)", text: "#f87171" },
+  Cancelled: { bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.4)", text: "#94a3b8" },
 };
 
 // ── My Tickets view ────────────────────────────────────────────────────────────
@@ -372,14 +380,247 @@ function MyTicketsView() {
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────────
+// ── My Bookings view ───────────────────────────────────────────────────────────
+
+function MyBookingsView() {
+  const [bookings, setBookings] = useState([]);
+  const [search, setSearch] = useState("");
+
+  const loadResources = async () => {
+    try {
+      const storedUser = sessionStorage.getItem("user");
+      if (!storedUser) return;
+      const user = JSON.parse(storedUser);
+      
+      const response = await api.get(`/api/bookings?email=${user.email}`);
+      setBookings(response.data || []);
+    } catch (err) {
+      console.error("Failed to load bookings:", err);
+    }
+  };
+
+  const cancelBooking = async (id, status) => {
+    const s = status?.toUpperCase();
+    const isRemovable = s === "REJECTED" || s === "CANCELLED";
+    
+    const msg = isRemovable
+      ? "Remove this record from your history?" 
+      : "Are you sure you want to cancel this booking?";
+
+    if (!confirm(msg)) return;
+    try {
+      await api.delete(`/api/bookings/${id}`);
+      // Refresh the list to show the new status or removal
+      loadResources();
+      window.dispatchEvent(new Event("booking-submitted"));
+    } catch (err) {
+      console.error("Failed to cancel booking:", err);
+      alert("Failed to update booking status.");
+    }
+  };
+
+  useEffect(() => {
+    loadResources();
+    window.addEventListener("booking-submitted", loadResources);
+    return () => window.removeEventListener("booking-submitted", loadResources);
+  }, []);
+
+  const visible = bookings.filter((b) => {
+    const q = search.toLowerCase();
+    return (
+      !q ||
+      b.bookingId.toLowerCase().includes(q) ||
+      b.resourceName.toLowerCase().includes(q) ||
+      b.purpose.toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <section
+      style={{
+        borderRadius: "1.5rem",
+        border: "1px solid rgba(255,255,255,0.05)",
+        background: "rgba(15,23,42,0.4)",
+        backdropFilter: "blur(16px)",
+        padding: "2rem",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#fff" }}>My Bookings</h2>
+          <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "#64748b" }}>
+            {bookings.length} resource booking{bookings.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <button
+          onClick={loadResources}
+          style={{
+            display: "flex", alignItems: "center", gap: "0.4rem",
+            padding: "0.45rem 0.875rem",
+            borderRadius: "0.625rem",
+            border: "1px solid rgba(255,255,255,0.07)",
+            background: "rgba(255,255,255,0.04)",
+            color: "#94a3b8", fontSize: "0.75rem", fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          <RefreshCw size={13} /> Refresh
+        </button>
+      </div>
+
+      <div style={{ position: "relative", marginBottom: "1.25rem" }}>
+        <Search size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#475569" }} />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by ID, resource, or purpose…"
+          style={{
+            width: "100%", padding: "0.55rem 0.875rem 0.55rem 2.1rem",
+            borderRadius: "0.625rem", border: "1px solid rgba(255,255,255,0.07)",
+            background: "rgba(255,255,255,0.04)", color: "#e2e8f0", fontSize: "0.8rem", outline: "none",
+          }}
+        />
+      </div>
+
+      {visible.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "3rem", color: "#475569" }}>
+          <CalendarCheck size={40} style={{ marginBottom: "1rem", opacity: 0.5 }} />
+          <p>No bookings found.</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          {visible.map((b) => (
+            <div
+              key={b.id}
+              style={{
+                borderRadius: "1rem", border: "1px solid rgba(255,255,255,0.06)",
+                background: "rgba(255,255,255,0.03)", padding: "1.25rem",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                    <span style={{
+                      fontFamily: "monospace", fontSize: "0.7rem", fontWeight: 800,
+                      color: "#818cf8", background: "rgba(99,102,241,0.1)",
+                      padding: "0.2rem 0.5rem", borderRadius: "0.4rem"
+                    }}>
+                      {b.bookingId}
+                    </span>
+                    
+                    {/* Status Badge */}
+                    {(() => {
+                      const status = b.status || "PENDING";
+                      const cfg = BOOKING_STATUS_CONFIG[status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()] || BOOKING_STATUS_CONFIG.Pending;
+                      return (
+                        <span style={{
+                          fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                          padding: "0.15rem 0.5rem", borderRadius: "9999px",
+                          background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.text,
+                        }}>
+                          {status}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <h3 style={{ margin: "0.5rem 0 0.25rem", fontSize: "1rem", fontWeight: 700, color: "#fff" }}>{b.resourceName}</h3>
+                </div>
+                <span style={{ color: "#475569", fontSize: "0.7rem", fontWeight: 700 }}>
+                  {b.status?.toUpperCase() === "REJECTED" ? "Closed" : "Active"}
+                </span>
+              </div>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "1rem", fontSize: "0.75rem", color: "#94a3b8" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <CalendarCheck size={14} className="text-indigo-400" />
+                  {b.date}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Clock size={14} className="text-indigo-400" />
+                  {b.startTime} - {b.endTime}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Users size={14} className="text-indigo-400" />
+                  {b.attendance} People
+                </div>
+              </div>
+              
+              <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: "0.75rem", background: "rgba(255,255,255,0.02)", fontSize: "0.8rem", color: "#cbd5e1" }}>
+                <strong style={{ display: "block", fontSize: "0.65rem", textTransform: "uppercase", color: "#64748b", marginBottom: "0.25rem" }}>Purpose</strong>
+                {b.purpose}
+              </div>
+
+              <button
+                onClick={() => cancelBooking(b.id, b.status)}
+                style={{
+                  marginTop: "1.25rem",
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem",
+                  padding: "0.75rem",
+                  borderRadius: "0.75rem",
+                  border: (b.status?.toUpperCase() === "REJECTED" || b.status?.toUpperCase() === "CANCELLED") ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(239,68,68,0.2)",
+                  background: (b.status?.toUpperCase() === "REJECTED" || b.status?.toUpperCase() === "CANCELLED") ? "rgba(255,255,255,0.03)" : "rgba(239,68,68,0.05)",
+                  color: (b.status?.toUpperCase() === "REJECTED" || b.status?.toUpperCase() === "CANCELLED") ? "#94a3b8" : "#f87171",
+                  fontSize: "0.75rem",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => {
+                  const s = b.status?.toUpperCase();
+                  const isInactive = s === "REJECTED" || s === "CANCELLED";
+                  e.currentTarget.style.background = isInactive ? "rgba(255,255,255,0.06)" : "rgba(239,68,68,0.1)";
+                  e.currentTarget.style.borderColor = isInactive ? "rgba(255,255,255,0.15)" : "rgba(239,68,68,0.4)";
+                }}
+                onMouseLeave={(e) => {
+                  const s = b.status?.toUpperCase();
+                  const isInactive = s === "REJECTED" || s === "CANCELLED";
+                  e.currentTarget.style.background = isInactive ? "rgba(255,255,255,0.03)" : "rgba(239,68,68,0.05)";
+                  e.currentTarget.style.borderColor = isInactive ? "rgba(255,255,255,0.08)" : "rgba(239,68,68,0.2)";
+                }}
+              >
+                <Trash2 size={14} /> 
+                {(() => {
+                  const s = b.status?.toUpperCase();
+                  if (s === "REJECTED" || s === "CANCELLED") return "Remove from History";
+                  return "Cancel Booking";
+                })()}
+              </button>
+
+              {b.status?.toUpperCase() === "REJECTED" && (b.rejectionReason || b.reason) && (
+                <div style={{
+                  marginTop: "1rem",
+                  padding: "1rem",
+                  borderRadius: "1rem",
+                  background: "rgba(239,68,68,0.05)",
+                  border: "1px solid rgba(239,68,68,0.15)",
+                }}>
+                  <div style={{ fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", color: "#f87171", marginBottom: "0.25rem" }}>
+                    Rejection Reason
+                  </div>
+                  <p style={{ margin: 0, fontSize: "0.75rem", color: "#fca5a5" }}>
+                    {b.rejectionReason || b.reason}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
 
 export default function UserDashboard() {
   const navigate = useNavigate();
   const [user,        setUser]       = useState(null);
   const [greeting,    setGreeting]   = useState("Good day");
-  const [activeView,  setActiveView] = useState("dashboard"); // "dashboard" | "tickets"
+  const [activeView,  setActiveView] = useState("dashboard"); // "dashboard" | "tickets" | "bookings"
   const [ticketCount, setTicketCount]= useState(0);
+  const [bookingCount, setBookingCount] = useState(0);
   const recentActivityRef = useRef(null);
 
   // Load ticket count for the sidebar badge
@@ -394,6 +635,19 @@ export default function UserDashboard() {
       setTicketCount(tickets.filter((x) => x.status === "Open" || x.status === "In Progress").length);
     } catch (err) {
       console.error("Failed to load ticket count:", err);
+    }
+  };
+
+  const loadBookingCount = async () => {
+    try {
+      const storedUser = sessionStorage.getItem("user");
+      if (!storedUser) return;
+      const user = JSON.parse(storedUser);
+      const response = await api.get(`/api/bookings?email=${user.email}`);
+      const bookings = response.data || [];
+      setBookingCount(bookings.length);
+    } catch (err) {
+      console.error("Failed to load booking count:", err);
     }
   };
 
@@ -433,10 +687,15 @@ export default function UserDashboard() {
         navigate("/login");
       }
     }
-
+  
     loadTicketCount();
+    loadBookingCount();
     window.addEventListener("ticket-submitted", loadTicketCount);
-    return () => window.removeEventListener("ticket-submitted", loadTicketCount);
+    window.addEventListener("booking-submitted", loadBookingCount);
+    return () => {
+      window.removeEventListener("ticket-submitted", loadTicketCount);
+      window.removeEventListener("booking-submitted", loadBookingCount);
+    };
   }, [navigate]);
 
   const handleLogout = () => {
@@ -449,6 +708,7 @@ export default function UserDashboard() {
     if (label === "Resources")  { navigate("/resources"); return; }
     if (label === "Alerts")     { setActiveView("dashboard"); setTimeout(() => recentActivityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); return; }
     if (label === "My Tickets") { setActiveView("tickets");   return; }
+    if (label === "Bookings")    { setActiveView("bookings");  return; }
     if (label === "Dashboard")  { setActiveView("dashboard"); return; }
   };
 
@@ -490,14 +750,19 @@ export default function UserDashboard() {
                   key={label}
                   onClick={() => handleSidebarNavigation(label)}
                   className={`group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
-                    active
+                    (activeView === "dashboard" && label === "Dashboard") || (activeView === "bookings" && label === "Bookings")
                       ? "bg-indigo-500/10 text-indigo-400"
                       : "text-slate-400 hover:bg-white/5 hover:text-white"
                   }`}
                 >
                   <Icon size={18} />
                   <span>{label}</span>
-                  {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />}
+                  {label === "Bookings" && bookingCount > 0 && activeView !== "bookings" && (
+                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500/20 text-[10px] font-bold text-indigo-400 border border-indigo-500/30">
+                      {bookingCount}
+                    </span>
+                  )}
+                  {((activeView === "dashboard" && label === "Dashboard") || (activeView === "bookings" && label === "Bookings")) && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />}
                 </button>
               );
             })}
@@ -575,11 +840,13 @@ export default function UserDashboard() {
         <header className="mb-12 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-black text-white">
-              {activeView === "tickets" ? "My Tickets 🎫" : `${greeting}, ${firstName} 👋`}
+              {activeView === "tickets" ? "My Tickets 🎫" : activeView === "bookings" ? "My Bookings 🗓️" : `${greeting}, ${firstName} 👋`}
             </h1>
             <p className="mt-1 text-slate-400">
               {activeView === "tickets"
                 ? "Track the status of all your submitted support tickets."
+                : activeView === "bookings"
+                ? "Manage your resource reservations and campus bookings."
                 : "Here's what's happening on campus today."}
             </p>
           </div>
@@ -594,12 +861,20 @@ export default function UserDashboard() {
         {activeView === "tickets" ? (
           /* ─── My Tickets view ─── */
           <MyTicketsView />
+        ) : activeView === "bookings" ? (
+          /* ─── My Bookings view ─── */
+          <MyBookingsView />
         ) : (
           /* ─── Default dashboard view ─── */
           <>
             {/* Stats row */}
             <div className="mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {stats.map(({ label, value, icon: Icon, color }) => (
+              {[
+                { label: "Active Bookings", value: bookingCount.toString(), icon: CalendarCheck, color: "indigo" },
+                { label: "Open Tickets", value: ticketCount.toString(), icon: Wrench, color: "amber" },
+                { label: "Resources Used", value: "12", icon: Building2, color: "emerald" },
+                { label: "Notifications", value: "5", icon: Bell, color: "pink" },
+              ].map(({ label, value, icon: Icon, color }) => (
                 <div key={label} className="group relative overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 p-6 backdrop-blur-xl transition-all hover:border-white/10">
                   <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-${color}-500/10 text-${color}-400 group-hover:bg-${color}-500/20 transition-colors`}>
                     <Icon size={24} strokeWidth={1.8} />

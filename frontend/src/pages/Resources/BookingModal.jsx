@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { X, Calendar, Clock, FileText } from "lucide-react";
+import { X, Calendar, Clock, FileText, Users } from "lucide-react";
+import api from "../../api/axiosConfig";
 
 export default function BookingModal({ open, onClose, resource }) {
   const [form, setForm] = useState({
     date: "",
     startTime: "",
     endTime: "",
+    attendance: "",
     purpose: "",
   });
 
@@ -18,13 +20,38 @@ export default function BookingModal({ open, onClose, resource }) {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
-    if (!form.date || !form.startTime || !form.endTime || !form.purpose) {
+  const handleSubmit = async () => {
+    if (!form.date || !form.startTime || !form.endTime || !form.attendance || !form.purpose) {
       alert("Please fill in all fields.");
       return;
     }
-    alert(`Booking submitted for ${resource?.name}`);
-    onClose();
+
+    try {
+      const storedUser = sessionStorage.getItem("user");
+      if (!storedUser) {
+        alert("User not logged in.");
+        return;
+      }
+      const user = JSON.parse(storedUser);
+
+      const bookingData = {
+        ...form,
+        userEmail: user.email,
+        resourceId: resource?.id,
+        resourceName: resource?.name,
+        attendance: parseInt(form.attendance)
+      };
+
+      await api.post("/api/bookings", bookingData);
+      alert(`Booking submitted for ${resource?.name}`);
+      onClose();
+      // Optional: dispatch event to refresh dashboard
+      window.dispatchEvent(new Event("booking-submitted"));
+    } catch (err) {
+      console.error("Failed to submit booking:", err);
+      const errorMsg = err.response?.data?.message || err.message || "Please try again.";
+      alert(`Failed to submit booking: ${errorMsg}`);
+    }
   };
 
   return (
@@ -86,6 +113,19 @@ export default function BookingModal({ open, onClose, resource }) {
                 onChange={handleChange} 
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
+              <Users size={14} /> Number of Attendance
+            </label>
+            <input 
+              type="number"
+              name="attendance" 
+              placeholder="e.g. 50"
+              className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              onChange={handleChange} 
+            />
           </div>
 
           <div className="space-y-2">
