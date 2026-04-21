@@ -271,80 +271,292 @@ function UserManagementSection() {
 }
 
 function BookingManagementSection() {
-  const bookings = [
-    { item: "Lecture Hall A", user: "John Doe", date: "May 12, 2024", time: "10:00 AM", status: "Pending" },
-    { item: "Projector X", user: "Sarah Smith", date: "May 13, 2024", time: "02:00 PM", status: "Approved" },
-    { item: "Meeting Room B", user: "Mike Jones", date: "May 12, 2024", time: "11:30 AM", status: "Rejected" },
-  ];
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [updatingId, setUpdatingId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [rejectingBooking, setRejectingBooking] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await api.get("/api/bookings/all");
+      setBookings(response.data || []);
+    } catch (err) {
+      console.error("Failed to fetch bookings:", err);
+      setError("Unable to load bookings. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  const updateStatus = async (id, newStatus, reason = null) => {
+    setUpdatingId(id);
+    try {
+      const payload = { status: newStatus };
+      if (reason) payload.reason = reason;
+      
+      await api.put(`/api/bookings/${id}/status`, payload);
+      
+      setBookings((prev) =>
+        prev.map((b) => (b.id === id ? { ...b, status: newStatus, rejectionReason: reason || b.rejectionReason } : b))
+      );
+      
+      if (newStatus === "REJECTED") {
+        setRejectingBooking(null);
+        setRejectionReason("");
+      }
+    } catch (err) {
+      console.error("Failed to update booking status:", err);
+      alert("Failed to update booking. Please try again.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleRejectConfirm = () => {
+    if (!rejectionReason.trim()) {
+      alert("Please provide a reason for rejection.");
+      return;
+    }
+    updateStatus(rejectingBooking.id, "REJECTED", rejectionReason);
+  };
+
+  const filteredBookings = bookings.filter((b) => {
+    const matchesStatus =
+      statusFilter === "ALL" || b.status === statusFilter;
+    const q = searchQuery.toLowerCase();
+    const matchesSearch =
+      !q ||
+      (b.resourceName || "").toLowerCase().includes(q) ||
+      (b.userEmail || "").toLowerCase().includes(q) ||
+      (b.bookingId || "").toLowerCase().includes(q) ||
+      (b.purpose || "").toLowerCase().includes(q);
+    return matchesStatus && matchesSearch;
+  });
+
+  const pendingCount = bookings.filter((b) => b.status === "PENDING").length;
+  const approvedCount = bookings.filter((b) => b.status === "APPROVED").length;
+  const rejectedCount = bookings.filter((b) => b.status === "REJECTED").length;
+  const cancelledCount = bookings.filter((b) => b.status === "CANCELLED").length;
+  const totalCount = bookings.length;
+
+  const approvalRate = totalCount > 0
+    ? Math.round((approvedCount / totalCount) * 100)
+    : 0;
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "APPROVED": return "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20";
+      case "REJECTED": return "text-red-400 bg-red-400/10 border border-red-400/20";
+      case "CANCELLED": return "text-slate-400 bg-slate-400/10 border border-slate-400/20";
+      default:         return "text-amber-400 bg-amber-400/10 border border-amber-400/20";
+    }
+  };
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-      <div className="lg:col-span-3 rounded-[32px] border border-white/5 bg-slate-900/40 p-8">
-        <div className="mb-8 flex items-center justify-between">
-          <h3 className="text-xl font-bold">Booking Requests</h3>
-          <span className="rounded-full bg-indigo-500/10 px-4 py-1 text-[10px] font-black uppercase text-indigo-400 tracking-widest border border-indigo-500/20">12 NEW REQUESTS</span>
-        </div>
-        <div className="space-y-4">
-          {bookings.map((b, i) => (
-            <div key={i} className="flex flex-col gap-6 rounded-3xl border border-white/5 bg-white/5 p-6 sm:flex-row sm:items-center">
-              <div className="flex flex-1 items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 font-bold">{b.item[0]}</div>
-                <div>
-                  <div className="text-sm font-bold text-white">{b.item}</div>
-                  <div className="text-xs text-slate-500">Requested by <span className="text-indigo-400 font-medium">{b.user}</span></div>
-                </div>
-              </div>
-              <div className="flex flex-1 gap-8">
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">Date & Time</div>
-                  <div className="text-xs text-slate-300 font-medium">{b.date} • {b.time}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">Status</div>
-                  <div className={`text-xs font-bold ${b.status === 'Approved' ? 'text-emerald-400' : b.status === 'Rejected' ? 'text-red-400' : 'text-amber-400'}`}>
-                    {b.status}
+    <div className="space-y-8">
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {[
+          { label: "Total",    value: totalCount,    color: "text-indigo-400",  bg: "bg-indigo-400/10" },
+          { label: "Pending",  value: pendingCount,  color: "text-amber-400",   bg: "bg-amber-400/10" },
+          { label: "Approved", value: approvedCount, color: "text-emerald-400", bg: "bg-emerald-400/10" },
+          { label: "Rejected", value: rejectedCount, color: "text-red-400",     bg: "bg-red-400/10" },
+          { label: "Cancelled", value: cancelledCount, color: "text-slate-400",   bg: "bg-slate-400/10" },
+        ].map((s) => (
+          <div key={s.label} className={`rounded-3xl border border-white/5 ${s.bg} p-6 text-center`}>
+            <div className={`text-3xl font-black ${s.color}`}>{s.value}</div>
+            <div className="mt-1 text-[10px] font-black uppercase tracking-widest text-slate-500">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+        {/* Main Table */}
+        <div className="lg:col-span-4 rounded-[32px] border border-white/5 bg-slate-900/40 p-8">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <h3 className="text-xl font-bold">Booking Requests</h3>
+              {pendingCount > 0 && (
+                <span className="rounded-full bg-amber-500/10 px-3 py-1 text-[10px] font-black uppercase text-amber-400 tracking-widest border border-amber-500/20">
+                  {pendingCount} PENDING
+                </span>
+              )}
+            </div>
+            <button
+              onClick={fetchBookings}
+              className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition-all border border-white/5"
+            >
+              <RefreshCw size={14} /> Refresh
+            </button>
+          </div>
+
+          {/* Search + Filter */}
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+              <input
+                type="text"
+                placeholder="Search by resource, email, purpose..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl border border-white/5 bg-slate-900/50 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {["ALL", "PENDING", "APPROVED", "REJECTED", "CANCELLED"].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`rounded-xl border px-4 py-2 text-xs font-bold transition-all ${
+                    statusFilter === s
+                      ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
+                      : "border-white/5 bg-slate-900/50 text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content */}
+          {loading ? (
+            <div className="py-16 text-center text-slate-500 text-sm">Loading bookings...</div>
+          ) : error ? (
+            <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-center text-red-400 text-sm">{error}</div>
+          ) : filteredBookings.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-slate-500">
+              <InboxIcon size={40} className="opacity-30" />
+              <p className="text-sm font-medium">No bookings found</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredBookings.map((b) => (
+                <div
+                  key={b.id}
+                  className="flex flex-col gap-4 rounded-3xl border border-white/5 bg-white/5 p-6 sm:flex-row sm:items-center transition-all hover:border-white/10"
+                >
+                  {/* Resource info */}
+                  <div className="flex flex-1 items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 font-bold text-lg flex-shrink-0">
+                      {(b.resourceName || b.resourceId || "?")[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-bold text-white truncate">{b.resourceName || b.resourceId}</div>
+                      <div className="text-xs text-slate-500 truncate">
+                        By <span className="text-indigo-400 font-medium">{b.userEmail}</span>
+                      </div>
+                      {b.purpose && (
+                        <div className="text-xs text-slate-600 truncate mt-0.5">{b.purpose}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Date/Time */}
+                  <div className="flex gap-6 text-xs flex-shrink-0">
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">Date</div>
+                      <div className="text-slate-300 font-medium">{b.date || "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">Time</div>
+                      <div className="text-slate-300 font-medium">
+                        {b.startTime && b.endTime ? `${b.startTime} – ${b.endTime}` : "—"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-1">Status</div>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${getStatusStyle(b.status)}`}>
+                        {b.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 flex-shrink-0">
+                    {b.status === "PENDING" && (
+                      <>
+                        <button
+                          onClick={() => updateStatus(b.id, "APPROVED")}
+                          disabled={updatingId === b.id}
+                          title="Approve"
+                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all disabled:opacity-50"
+                        >
+                          <CheckCircle2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => setRejectingBooking(b)}
+                          disabled={updatingId === b.id}
+                          title="Reject"
+                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+                        >
+                          <XCircle size={18} />
+                        </button>
+                      </>
+                    )}
+
                   </div>
                 </div>
-              </div>
-              <div className="flex gap-3">
-                {b.status === "Pending" && (
-                  <>
-                    <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all"><CheckCircle2 size={18} /></button>
-                    <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all"><XCircle size={18} /></button>
-                  </>
-                )}
-                <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-slate-500 hover:text-white transition-all"><MoreVertical size={18} /></button>
-              </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
-      <div className="rounded-[32px] border border-white/5 bg-slate-900/40 p-8">
-        <h3 className="text-lg font-bold mb-6">Booking Stats</h3>
-        <div className="space-y-8">
-          <div>
-            <div className="flex justify-between text-xs font-bold mb-2 uppercase tracking-widest text-slate-500">
-              <span>Approvals</span>
-              <span className="text-emerald-400">84%</span>
+
+      {/* Rejection Reason Modal */}
+      {rejectingBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-[32px] border border-white/10 bg-slate-900 p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 text-red-400">
+              <XCircle size={28} />
             </div>
-            <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
-              <div className="h-full bg-emerald-400 rounded-full" style={{ width: '84%' }} />
-            </div>
-          </div>
-          <div>
-            <div className="flex justify-between text-xs font-bold mb-2 uppercase tracking-widest text-slate-500">
-              <span>Utilisation</span>
-              <span className="text-indigo-400">62%</span>
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
-              <div className="h-full bg-indigo-500 rounded-full" style={{ width: '62%' }} />
+            <h3 className="text-xl font-bold text-white mb-2">Reject Booking</h3>
+            <p className="text-sm text-slate-400 mb-6">
+              Please provide a reason for rejecting the booking for <span className="text-white font-bold">{rejectingBooking.resourceName}</span>.
+            </p>
+            
+            <textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Enter rejection reason..."
+              className="w-full h-32 rounded-2xl border border-white/5 bg-slate-800/50 p-4 text-sm text-white placeholder-slate-600 focus:border-red-500/50 focus:outline-none mb-6 resize-none"
+            />
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setRejectingBooking(null);
+                  setRejectionReason("");
+                }}
+                className="flex-1 rounded-xl bg-white/5 py-3 text-sm font-bold text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRejectConfirm}
+                disabled={updatingId === rejectingBooking.id}
+                className="flex-1 rounded-xl bg-red-600 py-3 text-sm font-bold text-white hover:bg-red-500 transition-all shadow-lg shadow-red-600/20 disabled:opacity-50"
+              >
+                {updatingId === rejectingBooking.id ? "Rejecting..." : "Reject Booking"}
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
+
 
 function ResourceManagementSection() {
   const [resources, setResources] = useState([]);
