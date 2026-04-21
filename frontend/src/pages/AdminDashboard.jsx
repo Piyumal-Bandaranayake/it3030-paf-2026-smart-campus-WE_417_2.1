@@ -620,13 +620,14 @@ function ResourceManagementSection() {
 
 // ── Ticket Management Section ─────────────────────────────────────────────────
 
-const TICKET_STATUSES = ["Open", "In Progress", "Resolved", "Closed"];
+const TICKET_STATUSES = ["Open", "In Progress", "Resolved", "Closed", "Rejected"];
 
 const STATUS_CFG = {
   "Open":        { bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.4)",  text: "#818cf8", dot: "#6366f1" },
   "In Progress": { bg: "rgba(245,158,11,0.15)",  border: "rgba(245,158,11,0.4)",  text: "#fbbf24", dot: "#f59e0b" },
   "Resolved":    { bg: "rgba(34,197,94,0.15)",   border: "rgba(34,197,94,0.4)",   text: "#4ade80", dot: "#22c55e" },
   "Closed":      { bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.4)", text: "#94a3b8", dot: "#64748b" },
+  "Rejected":    { bg: "rgba(239,68,68,0.15)",   border: "rgba(239,68,68,0.4)",   text: "#f87171", dot: "#ef4444" },
 };
 
 const PRIORITY_CFG = {
@@ -658,13 +659,24 @@ function TicketManagementSection() {
   const [statusFilter,   setStatusFilter]   = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [expandedId,     setExpandedId]     = useState(null);
+  
+  const [rejectingTicketId, setRejectingTicketId] = useState(null);
+  const [rejectionReason,    setRejectionReason]    = useState("");
+  const [isSubmittingReject, setIsSubmittingReject] = useState(false);
+
+  const [assignmentModalTicket, setAssignmentModalTicket] = useState(null);
+  const [allUsers, setAllUsers] = useState([]);
+  const [assigningLoading, setAssigningLoading] = useState(false);
 
   const load = async () => {
     try {
       const response = await api.get("/api/tickets");
       setTickets(response.data || []);
+      
+      const usersRes = await api.get("/api/users");
+      setAllUsers(usersRes.data || []);
     } catch (err) {
-      console.error("Failed to load tickets:", err);
+      console.error("Failed to load tickets/users:", err);
     }
   };
 
@@ -688,16 +700,32 @@ function TicketManagementSection() {
     }
   };
 
-  const deleteTicket = async (id) => {
-    if (!confirm("Delete this ticket? This cannot be undone.")) return;
+  const deleteTicket = (id) => {
+    setRejectingTicketId(id);
+    setRejectionReason("");
+  };
+
+  const confirmRejection = async () => {
+    if (!rejectionReason.trim()) {
+      alert("Please enter a reason for rejection.");
+      return;
+    }
+    
+    setIsSubmittingReject(true);
     try {
-      await api.delete(`/api/tickets/${id}`);
-      setTickets(prev => prev.filter(t => t.id !== id));
-      if (expandedId === id) setExpandedId(null);
+      await api.put(`/api/tickets/${rejectingTicketId}/status`, { 
+        status: "Rejected", 
+        rejectionReason: rejectionReason 
+      });
+      setTickets(prev => prev.map(t => t.id === rejectingTicketId ? { ...t, status: "Rejected", rejectionReason: rejectionReason } : t));
+      setRejectingTicketId(null);
+      setRejectionReason("");
       window.dispatchEvent(new Event("ticket-submitted"));
     } catch (err) {
-      console.error("Failed to delete ticket:", err);
-      alert("Failed to delete ticket.");
+      console.error("Failed to reject ticket:", err);
+      alert("Failed to reject ticket.");
+    } finally {
+      setIsSubmittingReject(false);
     }
   };
 
@@ -1026,6 +1054,39 @@ function TicketManagementSection() {
                     <p style={{ margin: 0, fontSize: "0.82rem", color: "#94a3b8", lineHeight: 1.65 }}>
                       {ticket.description}
                     </p>
+
+                    <div style={{ marginTop: "1rem" }}>
+                      <button
+                        onClick={() => setAssignmentModalTicket(ticket)}
+                        style={{
+                          display: "flex", alignItems: "center", gap: "0.4rem",
+                          padding: "0.45rem 1rem", borderRadius: "0.75rem",
+                          background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)",
+                          color: "#818cf8", fontSize: "0.75rem", fontWeight: 700,
+                          cursor: "pointer", transition: "all 0.15s",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(99,102,241,0.15)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(99,102,241,0.1)"; }}
+                      >
+                        <UsersIcon size={14} /> 
+                        {ticket.assignedTechnician || ticket.assignedManager ? "Reassign Staff" : "Assign Staff"}
+                      </button>
+
+                      {(ticket.assignedTechnician || ticket.assignedManager) && (
+                        <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                          {ticket.assignedTechnician && (
+                            <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                              Technician: <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{ticket.assignedTechnician}</span>
+                            </span>
+                          )}
+                          {ticket.assignedManager && (
+                            <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                              Manager: <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{ticket.assignedManager}</span>
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                    {/* Contact */}
@@ -1089,6 +1150,161 @@ function TicketManagementSection() {
           );
         })}
       </div>
+
+      {/* ── Rejection Modal ── */}
+      {rejectingTicketId && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 100,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
+          padding: "1rem",
+        }}>
+          <div style={{
+            width: "100%", maxWidth: "450px",
+            background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "1.5rem", padding: "2rem",
+            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
+              <div style={{
+                display: "flex", height: "2.5rem", width: "2.5rem", alignItems: "center", justifyContent: "center",
+                borderRadius: "0.75rem", background: "rgba(239,68,68,0.1)", color: "#f87171"
+              }}>
+                <AlertTriangle size={20} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 800 }}>Reject Ticket</h3>
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "#64748b" }}>Please provide a reason for rejecting this ticket.</p>
+              </div>
+            </div>
+
+            <textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Type your reason here..."
+              style={{
+                width: "100%", minHeight: "120px", padding: "1rem", boxSizing: "border-box",
+                background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: "1rem", color: "#e2e8f0", fontSize: "0.875rem",
+                outline: "none", resize: "none", marginBottom: "1.5rem",
+              }}
+            />
+
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                onClick={() => setRejectingTicketId(null)}
+                style={{
+                  flex: 1, padding: "0.75rem", borderRadius: "0.75rem",
+                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                  color: "#94a3b8", fontSize: "0.875rem", fontWeight: 700,
+                  cursor: "pointer", transition: "all 0.15s",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRejection}
+                disabled={isSubmittingReject || !rejectionReason.trim()}
+                style={{
+                  flex: 2, padding: "0.75rem", borderRadius: "0.75rem",
+                  background: "#ef4444", color: "white",
+                  fontSize: "0.875rem", fontWeight: 700,
+                  cursor: (isSubmittingReject || !rejectionReason.trim()) ? "not-allowed" : "pointer",
+                  opacity: (isSubmittingReject || !rejectionReason.trim()) ? 0.5 : 1,
+                  border: "none", transition: "all 0.15s",
+                }}
+              >
+                {isSubmittingReject ? "Processing..." : "Confirm Rejection"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Assignment Modal ── */}
+      {assignmentModalTicket && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 100,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
+          padding: "1rem",
+        }}>
+          <div style={{
+            width: "100%", maxWidth: "500px", maxH: "80vh",
+            background: "#0f172a", border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "1.5rem", padding: "2rem",
+            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
+            display: "flex", flexDirection: "column"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
+              <div style={{
+                display: "flex", height: "2.5rem", width: "2.5rem", alignItems: "center", justifyContent: "center",
+                borderRadius: "0.75rem", background: "rgba(99,102,241,0.1)", color: "#818cf8"
+              }}>
+                <UsersIcon size={20} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.125rem", fontWeight: 800 }}>Assign Staff</h3>
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "#64748b" }}>Select a technician or manager for this ticket.</p>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.75rem", paddingRight: "0.5rem" }}>
+              {["Maintenance", "Staff"].map((role) => (
+                <div key={role}>
+                  <div style={{ fontSize: "0.6rem", fontWeight: 900, textTransform: "uppercase", color: "#475569", marginBottom: "0.5rem", letterSpacing: "0.1em" }}>
+                    {role === "Maintenance" ? "Technicians" : "Managers"}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                    {allUsers.filter(u => u.role === role).map(u => (
+                      <button
+                        key={u.id}
+                        onClick={() => handleAssignStaff(u.name, role)}
+                        disabled={assigningLoading}
+                        style={{
+                          display: "flex", alignItems: "center", gap: "0.75rem",
+                          padding: "0.75rem 1rem", borderRadius: "1rem",
+                          background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)",
+                          color: "#e2e8f0", fontSize: "0.85rem", textAlign: "left",
+                          cursor: assigningLoading ? "not-allowed" : "pointer", transition: "all 0.15s",
+                        }}
+                        onMouseEnter={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; } }}
+                        onMouseLeave={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; } }}
+                      >
+                        <div style={{ width: "1.75rem", height: "1.75rem", borderRadius: "50%", background: "rgba(99,102,241,0.2)", color: "#818cf8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 800 }}>
+                          {u.name[0]}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700 }}>{u.name}</div>
+                          <div style={{ fontSize: "0.65rem", color: "#64748b" }}>{u.email}</div>
+                        </div>
+                        <ChevronRight size={14} style={{ color: "#334155" }} />
+                      </button>
+                    ))}
+                    {allUsers.filter(u => u.role === role).length === 0 && (
+                      <div style={{ fontSize: "0.75rem", color: "#334155", fontStyle: "italic", padding: "0.5rem" }}>
+                        No users found with this role.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setAssignmentModalTicket(null)}
+              style={{
+                marginTop: "1.5rem", width: "100%", padding: "0.75rem", borderRadius: "0.75rem",
+                background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                color: "#94a3b8", fontSize: "0.875rem", fontWeight: 700,
+                cursor: "pointer", transition: "all 0.15s",
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
