@@ -24,6 +24,9 @@ public class Ticket {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<String> images;
+    private String rejectionReason;
+    private String assignedTechnician;
+    private String assignedManager;
 
     public Ticket() {}
 
@@ -93,4 +96,13 @@ public class Ticket {
 
     public List<String> getImages() { return images; }
     public void setImages(List<String> images) { this.images = images; }
+
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+
+    public String getAssignedTechnician() { return assignedTechnician; }
+    public void setAssignedTechnician(String assignedTechnician) { this.assignedTechnician = assignedTechnician; }
+
+    public String getAssignedManager() { return assignedManager; }
+    public void setAssignedManager(String assignedManager) { this.assignedManager = assignedManager; }
 }
