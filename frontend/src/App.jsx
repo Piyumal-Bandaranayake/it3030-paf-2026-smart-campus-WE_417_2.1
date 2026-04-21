@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import ResourceList from "./pages/Resources/ResourceList";
@@ -5,11 +6,39 @@ import UserResourceList from "./pages/Resources/UserResourceList";
 import EquipmentList from "./pages/Resources/EquipmentList";
 import Login from "./pages/Login";
 import UserDashboard from "./pages/UserDashboard";
-
 import Home from "./pages/Home";
 import AdminDashboard from "./pages/AdminDashboard";
+import RaiseTicketButton from "./components/RaiseTicketButton";
+
+/** Returns true when a user session exists in sessionStorage */
+function useIsLoggedIn() {
+  const [loggedIn, setLoggedIn] = useState(
+    () => !!sessionStorage.getItem("user")
+  );
+
+  useEffect(() => {
+    // Re-check whenever another tab changes sessionStorage
+    const onStorage = (e) => {
+      if (e.key === "user") setLoggedIn(!!e.newValue);
+    };
+
+    // Re-check on in-tab login / logout (dispatched by Login.jsx & logout handlers)
+    const onAuthChange = () => setLoggedIn(!!sessionStorage.getItem("user"));
+
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("auth-change", onAuthChange);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("auth-change", onAuthChange);
+    };
+  }, []);
+
+  return loggedIn;
+}
 
 function App() {
+  const isLoggedIn = useIsLoggedIn();
+
   return (
     <BrowserRouter>
       <Routes>
@@ -25,8 +54,12 @@ function App() {
         {/* Admin dashboard */}
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
       </Routes>
+
+      {/* Floating ticket button — only for authenticated users */}
+      {isLoggedIn && <RaiseTicketButton />}
     </BrowserRouter>
   );
 }
 
 export default App;
+

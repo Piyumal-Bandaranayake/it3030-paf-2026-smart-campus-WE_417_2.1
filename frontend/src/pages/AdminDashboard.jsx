@@ -18,15 +18,24 @@ import {
   Shield,
   ChevronRight,
   Filter,
+  Ticket,
+  MapPin,
+  Tag,
+  AlertTriangle,
+  Paperclip,
+  RefreshCw,
+  InboxIcon,
+  ChevronDown,
 } from "lucide-react";
 import ResourceModal from "./Resources/ResourceModal";
 import api from "../api/axiosConfig";
 
 const sidebarLinks = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "users", label: "User Management", icon: UsersIcon },
-  { id: "bookings", label: "Booking Management", icon: CalendarCheck },
-  { id: "resources", label: "Resource Management", icon: Building2 },
+  { id: "overview",  label: "Overview",            icon: LayoutDashboard },
+  { id: "users",     label: "User Management",      icon: UsersIcon },
+  { id: "bookings",  label: "Booking Management",   icon: CalendarCheck },
+  { id: "resources", label: "Resource Management",  icon: Building2 },
+  { id: "tickets",   label: "Ticket Management",    icon: Ticket },
 ];
 
 export default function AdminDashboard() {
@@ -121,10 +130,11 @@ export default function AdminDashboard() {
 
         {/* Dynamic Section Rendering */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {activeTab === "overview" && <OverviewSection />}
-          {activeTab === "users" && <UserManagementSection />}
-          {activeTab === "bookings" && <BookingManagementSection />}
+          {activeTab === "overview"  && <OverviewSection />}
+          {activeTab === "users"     && <UserManagementSection />}
+          {activeTab === "bookings"  && <BookingManagementSection />}
           {activeTab === "resources" && <ResourceManagementSection />}
+          {activeTab === "tickets"   && <TicketManagementSection />}
         </div>
       </main>
     </div>
@@ -604,6 +614,481 @@ function ResourceManagementSection() {
         saving={savingResource}
         saveError={saveError}
       />
+    </div>
+  );
+}
+
+// ── Ticket Management Section ─────────────────────────────────────────────────
+
+const TICKET_STATUSES = ["Open", "In Progress", "Resolved", "Closed"];
+
+const STATUS_CFG = {
+  "Open":        { bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.4)",  text: "#818cf8", dot: "#6366f1" },
+  "In Progress": { bg: "rgba(245,158,11,0.15)",  border: "rgba(245,158,11,0.4)",  text: "#fbbf24", dot: "#f59e0b" },
+  "Resolved":    { bg: "rgba(34,197,94,0.15)",   border: "rgba(34,197,94,0.4)",   text: "#4ade80", dot: "#22c55e" },
+  "Closed":      { bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.4)", text: "#94a3b8", dot: "#64748b" },
+};
+
+const PRIORITY_CFG = {
+  low:      { label: "Low",      color: "#22c55e" },
+  medium:   { label: "Medium",   color: "#f59e0b" },
+  high:     { label: "High",     color: "#f97316" },
+  critical: { label: "Critical", color: "#ef4444" },
+};
+
+function StatusBadge({ status }) {
+  const cfg = STATUS_CFG[status] || STATUS_CFG["Open"];
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: "0.3rem",
+      fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+      padding: "0.2rem 0.6rem", borderRadius: "9999px",
+      background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.text,
+      whiteSpace: "nowrap",
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.dot, display: "inline-block", flexShrink: 0 }} />
+      {status}
+    </span>
+  );
+}
+
+function TicketManagementSection() {
+  const [tickets,        setTickets]        = useState([]);
+  const [search,         setSearch]         = useState("");
+  const [statusFilter,   setStatusFilter]   = useState("All");
+  const [priorityFilter, setPriorityFilter] = useState("All");
+  const [expandedId,     setExpandedId]     = useState(null);
+
+  const load = async () => {
+    try {
+      const response = await api.get("/api/tickets");
+      setTickets(response.data || []);
+    } catch (err) {
+      console.error("Failed to load tickets:", err);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    window.addEventListener("ticket-submitted", load);
+    return () => window.removeEventListener("ticket-submitted", load);
+  }, []);
+
+
+
+  const updateStatus = async (id, newStatus) => {
+    try {
+      await api.put(`/api/tickets/${id}/status`, { status: newStatus });
+      // Reload or update locally
+      setTickets(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
+      window.dispatchEvent(new Event("ticket-submitted"));
+    } catch (err) {
+      console.error("Failed to update status:", err);
+      alert("Failed to update status. Please try again.");
+    }
+  };
+
+  const deleteTicket = async (id) => {
+    if (!confirm("Delete this ticket? This cannot be undone.")) return;
+    try {
+      await api.delete(`/api/tickets/${id}`);
+      setTickets(prev => prev.filter(t => t.id !== id));
+      if (expandedId === id) setExpandedId(null);
+      window.dispatchEvent(new Event("ticket-submitted"));
+    } catch (err) {
+      console.error("Failed to delete ticket:", err);
+      alert("Failed to delete ticket.");
+    }
+  };
+
+  const filtered = tickets.filter((t) => {
+    const matchStatus   = statusFilter   === "All" || t.status   === statusFilter;
+    const matchPriority = priorityFilter === "All" || t.priority === priorityFilter.toLowerCase();
+    const q = search.toLowerCase();
+    const matchSearch = !q ||
+      t.ticketId.toLowerCase().includes(q)     ||
+      t.resource.toLowerCase().includes(q)     ||
+      t.category.toLowerCase().includes(q)     ||
+      (t.contactName  || "").toLowerCase().includes(q) ||
+      t.description.toLowerCase().includes(q);
+    return matchStatus && matchPriority && matchSearch;
+  });
+
+  const counts = TICKET_STATUSES.reduce((acc, s) => {
+    acc[s] = tickets.filter((t) => t.status === s).length;
+    return acc;
+  }, {});
+
+  /* ── shared inline styles ── */
+  const card = {
+    borderRadius: "1.75rem",
+    border: "1px solid rgba(255,255,255,0.05)",
+    background: "rgba(15,23,42,0.5)",
+    backdropFilter: "blur(16px)",
+    overflow: "hidden",
+  };
+
+  const inputBase = {
+    padding: "0.6rem 0.875rem",
+    borderRadius: "0.875rem",
+    border: "1px solid rgba(255,255,255,0.07)",
+    background: "rgba(15,23,42,0.6)",
+    color: "#e2e8f0", fontSize: "0.8rem",
+    outline: "none", cursor: "pointer",
+  };
+
+  const TH_COLS = "1fr 1.4fr 1fr 0.8fr 1.2fr 1.7fr";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+
+      {/* ── Status summary cards ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
+        {TICKET_STATUSES.map((s) => {
+          const cfg = STATUS_CFG[s];
+          const active = statusFilter === s;
+          return (
+            <div
+              key={s}
+              onClick={() => setStatusFilter(active ? "All" : s)}
+              style={{
+                borderRadius: "1.25rem",
+                border: `1px solid ${active ? cfg.dot : cfg.border}`,
+                background: cfg.bg,
+                padding: "1.25rem 1.5rem",
+                cursor: "pointer",
+                outline: active ? `2px solid ${cfg.dot}` : "none",
+                outlineOffset: 2,
+                transition: "outline 0.15s, border-color 0.15s",
+              }}
+            >
+              <div style={{ fontSize: "2rem", fontWeight: 900, color: cfg.text, lineHeight: 1 }}>
+                {counts[s]}
+              </div>
+              <div style={{
+                marginTop: "0.35rem",
+                fontSize: "0.68rem", fontWeight: 800,
+                letterSpacing: "0.08em", textTransform: "uppercase",
+                color: cfg.text, opacity: 0.75,
+              }}>
+                {s}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Toolbar ── */}
+      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+        {/* Search */}
+        <div style={{ position: "relative", flex: "1 1 240px" }}>
+          <Search size={14} style={{
+            position: "absolute", left: "0.85rem", top: "50%",
+            transform: "translateY(-50%)", color: "#475569", pointerEvents: "none",
+          }} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by ID, resource, user, category…"
+            style={{ ...inputBase, width: "100%", paddingLeft: "2.25rem", boxSizing: "border-box" }}
+            onFocus={(e) => { e.target.style.borderColor = "rgba(99,102,241,0.5)"; }}
+            onBlur={(e)  => { e.target.style.borderColor = "rgba(255,255,255,0.07)"; }}
+          />
+        </div>
+
+        {/* Status filter */}
+        <div style={{ position: "relative" }}>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{ ...inputBase, appearance: "none", paddingRight: "2rem" }}
+          >
+            <option value="All">All Statuses</option>
+            {TICKET_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <ChevronDown size={13} style={{
+            position: "absolute", right: "0.6rem", top: "50%",
+            transform: "translateY(-50%)", color: "#475569", pointerEvents: "none",
+          }} />
+        </div>
+
+        {/* Priority filter */}
+        <div style={{ position: "relative" }}>
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            style={{ ...inputBase, appearance: "none", paddingRight: "2rem" }}
+          >
+            <option value="All">All Priorities</option>
+            {Object.entries(PRIORITY_CFG).map(([v, { label }]) => (
+              <option key={v} value={label}>{label}</option>
+            ))}
+          </select>
+          <ChevronDown size={13} style={{
+            position: "absolute", right: "0.6rem", top: "50%",
+            transform: "translateY(-50%)", color: "#475569", pointerEvents: "none",
+          }} />
+        </div>
+
+        {/* Refresh */}
+        <button
+          onClick={load}
+          style={{
+            ...inputBase,
+            display: "flex", alignItems: "center", gap: "0.4rem",
+            padding: "0.6rem 1rem", fontWeight: 700, cursor: "pointer",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = "#e2e8f0"; }}
+        >
+          <RefreshCw size={14} /> Refresh
+        </button>
+
+        <span style={{ marginLeft: "auto", fontSize: "0.75rem", color: "#475569", fontWeight: 600 }}>
+          {filtered.length} of {tickets.length} ticket{tickets.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* ── Ticket table ── */}
+      <div style={card}>
+        {/* Table head */}
+        <div style={{
+          display: "grid", gridTemplateColumns: TH_COLS,
+          padding: "0.75rem 1.5rem",
+          background: "rgba(255,255,255,0.03)",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          fontSize: "0.63rem", fontWeight: 900,
+          letterSpacing: "0.12em", textTransform: "uppercase", color: "#475569",
+        }}>
+          <span>Ticket ID</span>
+          <span>Resource · Location</span>
+          <span>Category</span>
+          <span>Priority</span>
+          <span>Status</span>
+          <span style={{ textAlign: "right" }}>Actions</span>
+        </div>
+
+        {/* Empty state */}
+        {filtered.length === 0 && (
+          <div style={{
+            display: "flex", flexDirection: "column", alignItems: "center",
+            padding: "4rem 1rem", gap: "0.75rem", color: "#334155",
+          }}>
+            <InboxIcon size={44} strokeWidth={1.2} />
+            <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600 }}>
+              {tickets.length === 0
+                ? "No tickets have been submitted yet."
+                : "No tickets match your current filters."}
+            </p>
+          </div>
+        )}
+
+        {/* Rows */}
+        {filtered.map((ticket) => {
+          const priorityCfg = PRIORITY_CFG[ticket.priority] || { label: ticket.priority, color: "#94a3b8" };
+          const isExpanded  = expandedId === ticket.id;
+          const date = new Date(ticket.createdAt).toLocaleDateString("en-GB", {
+            day: "2-digit", month: "short", year: "numeric",
+          });
+
+          return (
+            <div key={ticket.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+              {/* Main row */}
+              <div
+                onClick={() => setExpandedId(isExpanded ? null : ticket.id)}
+                style={{
+                  display: "grid", gridTemplateColumns: TH_COLS,
+                  alignItems: "center",
+                  padding: "1rem 1.5rem",
+                  cursor: "pointer",
+                  background: isExpanded ? "rgba(99,102,241,0.05)" : "transparent",
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) => { if (!isExpanded) e.currentTarget.style.background = "rgba(255,255,255,0.02)"; }}
+                onMouseLeave={(e) => { if (!isExpanded) e.currentTarget.style.background = "transparent"; }}
+              >
+                {/* Ticket ID chip */}
+                <span style={{
+                  fontFamily: "'Courier New', monospace",
+                  fontSize: "0.72rem", fontWeight: 800, color: "#818cf8",
+                  background: "rgba(99,102,241,0.1)", border: "1px solid rgba(99,102,241,0.2)",
+                  padding: "0.15rem 0.5rem", borderRadius: "0.3rem", width: "fit-content",
+                }}>
+                  {ticket.ticketId}
+                </span>
+
+                {/* Resource */}
+                <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#e2e8f0" }}>{ticket.resource}</span>
+                  {ticket.location && (
+                    <span style={{ fontSize: "0.72rem", color: "#475569" }}> · {ticket.location}</span>
+                  )}
+                </div>
+
+                {/* Category */}
+                <span style={{ fontSize: "0.75rem", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {ticket.category}
+                </span>
+
+                {/* Priority */}
+                <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.72rem", fontWeight: 700, color: priorityCfg.color }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: priorityCfg.color, display: "inline-block", flexShrink: 0 }} />
+                  {priorityCfg.label}
+                </span>
+
+                {/* Status badge */}
+                <StatusBadge status={ticket.status} />
+
+                {/* Action controls — stop propagation so row click doesn't toggle */}
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.5rem" }}
+                >
+                  {/* Inline status updater */}
+                  <div style={{ position: "relative" }}>
+                    <select
+                      value={ticket.status}
+                      onChange={(e) => updateStatus(ticket.id, e.target.value)}
+                      style={{
+                        appearance: "none",
+                        padding: "0.3rem 1.75rem 0.3rem 0.65rem",
+                        borderRadius: "0.5rem",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        background: "rgba(15,23,42,0.8)",
+                        color: "#e2e8f0",
+                        fontSize: "0.7rem", fontWeight: 700,
+                        cursor: "pointer", outline: "none",
+                      }}
+                    >
+                      {TICKET_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <ChevronDown size={11} style={{
+                      position: "absolute", right: "0.45rem", top: "50%",
+                      transform: "translateY(-50%)", color: "#475569", pointerEvents: "none",
+                    }} />
+                  </div>
+
+                  {/* Delete */}
+                  <button
+                    onClick={() => deleteTicket(ticket.id)}
+                    title="Delete ticket"
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      width: "2rem", height: "2rem", borderRadius: "0.5rem",
+                      border: "1px solid rgba(239,68,68,0.15)",
+                      background: "rgba(239,68,68,0.06)",
+                      color: "#f87171", cursor: "pointer", transition: "background 0.15s",
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.2)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.06)"; }}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+
+                  {/* Expand / collapse */}
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : ticket.id)}
+                    title={isExpanded ? "Collapse" : "Expand details"}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      width: "2rem", height: "2rem", borderRadius: "0.5rem",
+                      border: "1px solid rgba(255,255,255,0.07)",
+                      background: isExpanded ? "rgba(99,102,241,0.15)" : "rgba(255,255,255,0.04)",
+                      color: isExpanded ? "#818cf8" : "#64748b",
+                      cursor: "pointer", transition: "all 0.15s",
+                    }}
+                  >
+                    <ChevronDown size={13} style={{
+                      transform: isExpanded ? "rotate(180deg)" : "rotate(0)",
+                      transition: "transform 0.2s",
+                    }} />
+                  </button>
+                </div>
+              </div>
+
+              {/* ── Expanded detail panel ── */}
+              {isExpanded && (
+                <div style={{
+                  padding: "1.25rem 1.5rem 1.5rem",
+                  background: "rgba(99,102,241,0.03)",
+                  borderTop: "1px solid rgba(99,102,241,0.1)",
+                  display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem",
+                }}>
+                  {/* Description */}
+                  <div>
+                    <div style={{
+                      fontSize: "0.63rem", fontWeight: 800,
+                      letterSpacing: "0.1em", textTransform: "uppercase",
+                      color: "#475569", marginBottom: "0.5rem",
+                    }}>
+                      Issue Description
+                    </div>
+                    <p style={{ margin: 0, fontSize: "0.82rem", color: "#94a3b8", lineHeight: 1.65 }}>
+                      {ticket.description}
+                    </p>
+                  </div>
+
+                   {/* Contact */}
+                  <div>
+                    <div style={{
+                      fontSize: "0.63rem", fontWeight: 800,
+                      letterSpacing: "0.1em", textTransform: "uppercase",
+                      color: "#475569", marginBottom: "0.5rem",
+                    }}>
+                      Preferred Contact
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                      {ticket.contactName  && <span style={{ fontSize: "0.8rem", color: "#cbd5e1" }}>👤 {ticket.contactName}</span>}
+                      {ticket.contactEmail && <span style={{ fontSize: "0.8rem", color: "#cbd5e1" }}>✉️ {ticket.contactEmail}</span>}
+                      {ticket.contactPhone && <span style={{ fontSize: "0.8rem", color: "#cbd5e1" }}>📞 {ticket.contactPhone}</span>}
+                    </div>
+                    
+                    {/* Images */}
+                    {ticket.images && ticket.images.length > 0 && (
+                      <div style={{ marginTop: "1rem" }}>
+                        <div style={{ fontSize: "0.63rem", fontWeight: 800, textTransform: "uppercase", color: "#475569", marginBottom: "0.4rem" }}>
+                          Attachments
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          {ticket.images.map((img, i) => (
+                            <a key={i} href={`http://localhost:8080${img}`} target="_blank" rel="noreferrer">
+                              <img 
+                                src={`http://localhost:8080${img}`} 
+                                alt="attachment" 
+                                style={{ width: 60, height: 60, objectFit: "cover", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.1)" }} 
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer meta */}
+                  <div style={{
+                    gridColumn: "1 / -1",
+                    display: "flex", gap: "1.5rem", alignItems: "center",
+                    paddingTop: "0.75rem",
+                    borderTop: "1px solid rgba(255,255,255,0.04)",
+                  }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: "#475569" }}>
+                      <Clock size={12} /> Raised: {date}
+                    </span>
+                    {ticket.images && ticket.images.length > 0 && (
+                      <span style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.7rem", color: "#475569" }}>
+                        <Paperclip size={12} /> {ticket.images.length} attachment{ticket.images.length > 1 ? "s" : ""}
+                      </span>
+                    )}
+                    <span style={{ marginLeft: "auto", fontSize: "0.65rem", fontFamily: "'Courier New', monospace", color: "#334155" }}>
+                      {ticket.id}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
