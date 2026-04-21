@@ -1,0 +1,118 @@
+package com.sliit.smart_campus.controller;
+
+import com.sliit.smart_campus.model.Booking;
+import com.sliit.smart_campus.repository.BookingRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+@RestController
+@RequestMapping("/api/bookings")
+@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
+public class BookingController {
+
+    private final BookingRepository bookingRepository;
+
+    public BookingController(BookingRepository bookingRepository) {
+        this.bookingRepository = bookingRepository;
+    }
+
+    // Create a new booking (user)
+    @PostMapping
+    public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
+        if (booking.getUserEmail() == null || booking.getResourceId() == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "User email and resource ID are required."));
+        }
+
+        // Conflict check: Check for overlapping bookings for the same resource on the same date
+        List<Booking> existingBookings = bookingRepository.findByResourceIdAndDate(booking.getResourceId(), booking.getDate());
+        for (Booking existing : existingBookings) {
+            // Only check against PENDING or APPROVED bookings
+            if (!"REJECTED".equalsIgnoreCase(existing.getStatus()) && !"CANCELLED".equalsIgnoreCase(existing.getStatus())) {
+                // Overlap logic: (NewStart < ExistingEnd) && (NewEnd > ExistingStart)
+                if (booking.getStartTime().compareTo(existing.getEndTime()) < 0 && 
+                    booking.getEndTime().compareTo(existing.getStartTime()) > 0) {
+                    return ResponseEntity.status(HttpStatus.CONFLICT)
+                            .body(Map.of("message", "This resource is already booked for the selected time slot. Please choose another time."));
+                }
+            }
+        }
+
+        // Generate bookingId
+        long count = bookingRepository.count();
+        booking.setBookingId("BK-" + String.format("%04d", count + 1));
+        
+        booking.setStatus("PENDING");
+        booking.setCreatedAt(LocalDateTime.now());
+
+        Booking savedBooking = bookingRepository.save(booking);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedBooking);
+    }
+
+    // Get bookings for a specific user (by email)
+    @GetMapping
+    public ResponseEntity<List<Booking>> getUserBookings(@RequestParam String email) {
+        return ResponseEntity.ok(bookingRepository.findByUserEmailOrderByCreatedAtDesc(email));
+    }
+
+    // Get ALL bookings (admin)
+    @GetMapping("/all")
+    public ResponseEntity<List<Booking>> getAllBookings() {
+        return ResponseEntity.ok(bookingRepository.findByOrderByCreatedAtDesc());
+    }
+
+    // Approve or Reject a booking (admin)
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Booking> updateBookingStatus(
+            @PathVariable String id,
+            @RequestBody Map<String, String> body) {
+
+        String newStatus = body.get("status");
+        if (newStatus == null || newStatus.isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Optional<Booking> optionalBooking = bookingRepository.findById(id);
+        if (optionalBooking.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Booking booking = optionalBooking.get();
+        booking.setStatus(newStatus.toUpperCase());
+        
+        if ("REJECTED".equalsIgnoreCase(newStatus)) {
+            booking.setRejectionReason(body.get("reason"));
+        }
+        
+        Booking updated = bookingRepository.save(booking);
+        return ResponseEntity.ok(updated);
+    }
+
+    // Cancel a booking (User)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> cancelBooking(@PathVariable String id) {
+        Optional<Booking> optionalBooking = bookingRepository.findById(id);
+        if (optionalBooking.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Booking booking = optionalBooking.get();
+        String currentStatus = booking.getStatus();
+
+        // If it's already REJECTED or CANCELLED, allow hard delete to clear history
+        if ("REJECTED".equalsIgnoreCase(currentStatus) || "CANCELLED".equalsIgnoreCase(currentStatus)) {
+            bookingRepository.deleteById(id);
+            return ResponseEntity.noContent().build();
+        }
+
+        // Otherwise, soft cancel by updating status
+        booking.setStatus("CANCELLED");
+        bookingRepository.save(booking);
+        return ResponseEntity.ok(booking);
+    }
+}
