@@ -47,6 +47,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                     .profilePicture(picture)
                     .provider("GOOGLE")
                     .role("USER") // Assign default role
+                    .status("Active") // Assign default status
                     .createdAt(LocalDateTime.now())
                     .build();
             userRepository.save(newUser);
