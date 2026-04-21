@@ -208,6 +208,9 @@ function OverviewSection() {
 
 function UserManagementSection() {
   const [users, setUsers] = useState([]);
+  const [addUserModalOpen, setAddUserModalOpen] = useState(false);
+  const [newUser, setNewUser] = useState({ name: "", email: "", phone: "", role: "USER" });
+  const [addingUser, setAddingUser] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
@@ -229,6 +232,36 @@ function UserManagementSection() {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    if (!newUser.name || !newUser.email) {
+      alert("Please fill in at least name and email.");
+      return;
+    }
+
+    try {
+      setAddingUser(true);
+      const response = await api.post("/api/users", newUser);
+      setUsers((prev) => [...prev, response.data]);
+      setAddUserModalOpen(false);
+      setNewUser({ name: "", email: "", phone: "", role: "USER" });
+      alert("User added successfully! They can now log in using their Google account with this email.");
+    } catch (err) {
+      console.error("Failed to add user:", err);
+      let message = "Failed to add user. Please try again.";
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          message = err.response.data;
+        } else if (err.response.data.message) {
+          message = err.response.data.message;
+        }
+      }
+      alert(message);
+    } finally {
+      setAddingUser(false);
+    }
+  };
 
   const deleteUser = async (id) => {
     if (!window.confirm("Are you sure you want to remove this user? This action cannot be undone.")) return;
@@ -257,20 +290,28 @@ function UserManagementSection() {
           <h3 className="text-xl font-bold">Registered Users</h3>
           <p className="text-xs text-slate-500 mt-1">Total {filteredUsers.length} users found</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {["ALL", "ADMIN", "USER", "TECHNICIAN", "MANAGER"].map((r) => (
-            <button
-              key={r}
-              onClick={() => setRoleFilter(r)}
-              className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
-                roleFilter === r
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                  : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5"
-              }`}
-            >
-              {r}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap gap-2">
+            {["ALL", "ADMIN", "USER", "TECHNICIAN", "MANAGER"].map((r) => (
+              <button
+                key={r}
+                onClick={() => setRoleFilter(r)}
+                className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                  roleFilter === r
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                    : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          <button 
+            onClick={() => setAddUserModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-600/20"
+          >
+            <Plus size={14} /> Add User
+          </button>
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -320,6 +361,79 @@ function UserManagementSection() {
           </tbody>
         </table>
       </div>
+
+      {/* Add User Modal */}
+      {addUserModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-[32px] border border-white/10 bg-slate-900 p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold text-white mb-6">Add New User</h3>
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  className="w-full rounded-xl border border-white/5 bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none"
+                  placeholder="e.g. John Doe"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="w-full rounded-xl border border-white/5 bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none"
+                  placeholder="name@university.edu"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Phone Number</label>
+                <input
+                  type="text"
+                  value={newUser.phone}
+                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                  className="w-full rounded-xl border border-white/5 bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none"
+                  placeholder="+94 7X XXX XXXX"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Role</label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="w-full rounded-xl border border-white/5 bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none appearance-none"
+                >
+                  <option value="USER">User (Student/Staff)</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="TECHNICIAN">Technician</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+              
+              <div className="flex gap-3 mt-8">
+                <button
+                  type="button"
+                  onClick={() => setAddUserModalOpen(false)}
+                  className="flex-1 rounded-xl bg-white/5 py-3 text-sm font-bold text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addingUser}
+                  className="flex-1 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+                >
+                  {addingUser ? "Adding..." : "Add User"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

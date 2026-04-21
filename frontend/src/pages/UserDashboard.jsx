@@ -667,6 +667,10 @@ export default function UserDashboard() {
             window.dispatchEvent(new Event("auth-change"));
             if (userData.role === "ADMIN") {
               navigate("/admin-dashboard");
+            } else if (userData.role === "MANAGER") {
+              navigate("/manager-dashboard");
+            } else if (userData.role === "TECHNICIAN") {
+              navigate("/technician-dashboard");
             } else {
               setUser(userData);
               window.history.replaceState({}, document.title, window.location.pathname);
@@ -680,6 +684,10 @@ export default function UserDashboard() {
         const userData = JSON.parse(stored);
         if (userData.role === "ADMIN") {
           navigate("/admin-dashboard");
+        } else if (userData.role === "MANAGER") {
+          navigate("/manager-dashboard");
+        } else if (userData.role === "TECHNICIAN") {
+          navigate("/technician-dashboard");
         } else {
           setUser(userData);
         }

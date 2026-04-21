@@ -36,7 +36,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/resource", "/api/resource/**", "/api/resources", "/api/resources/**").permitAll()
                 .requestMatchers("/api/tickets/**").permitAll() // Permit access to ticket management
                 .requestMatchers("/api/bookings/**").permitAll() // Permit access to booking management
-                .requestMatchers("/api/users/**").permitAll() // Permit access to user management
+                .requestMatchers("/api/users", "/api/users/**").permitAll() // Permit access to user management
                 .anyRequest().authenticated() // All other requests must be authenticated
             )
             // Configure Google OAuth login
