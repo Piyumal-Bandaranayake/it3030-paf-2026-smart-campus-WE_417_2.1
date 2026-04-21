@@ -21,6 +21,7 @@ import {
   Paperclip,
   Search,
   InboxIcon,
+  Trash2
 } from "lucide-react";
 import api from "../api/axiosConfig";
 
@@ -54,6 +55,7 @@ const STATUS_CONFIG = {
   "In Progress":{ bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)",  text: "#fbbf24" },
   Resolved:    { bg: "rgba(34,197,94,0.15)",   border: "rgba(34,197,94,0.4)",   text: "#4ade80" },
   Closed:      { bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.4)", text: "#94a3b8" },
+  Rejected:    { bg: "rgba(239,68,68,0.15)",   border: "rgba(239,68,68,0.4)",   text: "#f87171" },
 };
 
 const PRIORITY_CONFIG = {
@@ -83,13 +85,25 @@ function MyTicketsView() {
     }
   };
 
+  const deleteTicket = async (id) => {
+    if (!confirm("Remove this rejected ticket from your view?")) return;
+    try {
+      await api.delete(`/api/tickets/${id}`);
+      setTickets(prev => prev.filter(t => t.id !== id));
+      window.dispatchEvent(new Event("ticket-submitted"));
+    } catch (err) {
+      console.error("Failed to delete ticket:", err);
+      alert("Failed to delete ticket.");
+    }
+  };
+
   useEffect(() => {
     load();
     window.addEventListener("ticket-submitted", load);
     return () => window.removeEventListener("ticket-submitted", load);
   }, []);
 
-  const statuses = ["All", "Open", "In Progress", "Resolved", "Closed"];
+  const statuses = ["All", "Open", "In Progress", "Resolved", "Closed", "Rejected"];
 
   const visible = tickets.filter((t) => {
     const matchFilter = filter === "All" || t.status === filter;
@@ -261,9 +275,32 @@ function MyTicketsView() {
 
                   {/* Attachment count */}
                   {ticket.images && ticket.images.length > 0 && (
-                    <span style={{ display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.65rem", color: "#475569", marginLeft: "auto" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "0.2rem", fontSize: "0.65rem", color: "#475569", marginLeft: ticket.status === "Rejected" ? "0.5rem" : "auto" }}>
                       <Paperclip size={11} /> {ticket.images.length}
                     </span>
+                  )}
+
+                  {/* Delete button only for Rejected status */}
+                  {ticket.status === "Rejected" && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteTicket(ticket.id);
+                      }}
+                      title="Clear rejected ticket"
+                      style={{
+                        marginLeft: "auto",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        width: "1.75rem", height: "1.75rem", borderRadius: "0.5rem",
+                        border: "1px solid rgba(239,68,68,0.15)",
+                        background: "rgba(239,68,68,0.06)",
+                        color: "#f87171", cursor: "pointer", transition: "all 0.15s",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.2)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.06)"; }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   )}
                 </div>
 
@@ -287,6 +324,24 @@ function MyTicketsView() {
                 }}>
                   {ticket.description}
                 </p>
+
+                {/* Rejection Reason */}
+                {ticket.status === "Rejected" && ticket.rejectionReason && (
+                   <div style={{
+                     margin: "0 0 0.8rem",
+                     padding: "0.75rem 1rem",
+                     borderRadius: "0.75rem",
+                     background: "rgba(239,68,68,0.05)",
+                     border: "1px solid rgba(239,68,68,0.15)",
+                   }}>
+                     <div style={{ fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", color: "#f87171", marginBottom: "0.25rem" }}>
+                       Rejection Reason
+                     </div>
+                     <p style={{ margin: 0, fontSize: "0.75rem", color: "#fca5a5" }}>
+                       {ticket.rejectionReason}
+                     </p>
+                   </div>
+                )}
 
                 {/* Row 4: Images & Date */}
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "1rem" }}>
