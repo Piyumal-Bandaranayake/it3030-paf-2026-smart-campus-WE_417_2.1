@@ -38,6 +38,21 @@ function useIsLoggedIn() {
 
 function App() {
   const isLoggedIn = useIsLoggedIn();
+  const [user, setUser] = useState(() => {
+    const saved = sessionStorage.getItem("user");
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const saved = sessionStorage.getItem("user");
+      setUser(saved ? JSON.parse(saved) : null);
+    };
+    window.addEventListener("auth-change", handleAuthChange);
+    return () => window.removeEventListener("auth-change", handleAuthChange);
+  }, []);
+
+  const showTicketButton = isLoggedIn && user?.role !== "ADMIN";
 
   return (
     <BrowserRouter>
@@ -55,8 +70,8 @@ function App() {
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
       </Routes>
 
-      {/* Floating ticket button — only for authenticated users */}
-      {isLoggedIn && <RaiseTicketButton />}
+      {/* Floating ticket button — only for regular users */}
+      {showTicketButton && <RaiseTicketButton />}
     </BrowserRouter>
   );
 }
