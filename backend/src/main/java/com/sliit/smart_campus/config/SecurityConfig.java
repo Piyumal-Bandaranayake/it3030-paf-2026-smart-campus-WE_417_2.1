@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**", "/login/**", "/oauth2/**", "/logout", "/uploads/**").permitAll() // Allow everyone to access authentication endpoints and uploads
                 .requestMatchers(HttpMethod.GET, "/api/resource", "/api/resource/**", "/api/resources", "/api/resources/**").permitAll()
                 .requestMatchers("/api/tickets/**").permitAll() // Permit access to ticket management
+                .requestMatchers("/api/bookings/**").permitAll() // Permit access to booking management
                 .anyRequest().authenticated() // All other requests must be authenticated
             )
             // Configure Google OAuth login
