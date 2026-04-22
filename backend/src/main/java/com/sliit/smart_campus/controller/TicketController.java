@@ -135,6 +135,7 @@ public class TicketController {
 
         return ticketRepository.findById(id)
                 .map(ticket -> {
+                    String oldStatus = ticket.getStatus();
                     ticket.setStatus(status);
                     if ("Rejected".equals(status) && rejectionReason != null) {
                         ticket.setRejectionReason(rejectionReason);
@@ -144,6 +145,33 @@ public class TicketController {
                     }
                     ticket.setUpdatedAt(LocalDateTime.now());
                     Ticket updatedTicket = ticketRepository.save(ticket);
+
+                    // Notify the ticket owner if status actually changed
+                    if (!status.equals(oldStatus) && updatedTicket.getUserEmail() != null) {
+                        String notifTitle;
+                        String notifMessage;
+                        if ("Resolved".equals(status)) {
+                            notifTitle = "Ticket Resolved ✅";
+                            notifMessage = "Your ticket (" + updatedTicket.getTicketId() + ") has been resolved"
+                                    + (resolutionNote != null ? ". Note: " + resolutionNote : ".");
+                        } else if ("Rejected".equals(status)) {
+                            notifTitle = "Ticket Rejected ❌";
+                            notifMessage = "Your ticket (" + updatedTicket.getTicketId() + ") was rejected"
+                                    + (rejectionReason != null ? ": " + rejectionReason : ".");
+                        } else if ("In Progress".equals(status)) {
+                            notifTitle = "Ticket In Progress 🔧";
+                            notifMessage = "Your ticket (" + updatedTicket.getTicketId() + ") is now being worked on.";
+                        } else {
+                            notifTitle = "Ticket Updated";
+                            notifMessage = "Your ticket (" + updatedTicket.getTicketId() + ") status changed to " + status + ".";
+                        }
+                        Notification userNotif = new Notification(
+                            "TICKET_UPDATE", notifTitle, notifMessage,
+                            updatedTicket.getId(), updatedTicket.getUserEmail()
+                        );
+                        notificationRepository.save(userNotif);
+                    }
+
                     return new ResponseEntity<>(updatedTicket, HttpStatus.OK);
                 })
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));

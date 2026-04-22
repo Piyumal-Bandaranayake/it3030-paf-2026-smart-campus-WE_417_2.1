@@ -101,6 +101,7 @@ public class BookingController {
         }
 
         Booking booking = optionalBooking.get();
+        String previousStatus = booking.getStatus();
         booking.setStatus(newStatus.toUpperCase());
         
         if ("REJECTED".equalsIgnoreCase(newStatus)) {
@@ -108,6 +109,32 @@ public class BookingController {
         }
         
         Booking updated = bookingRepository.save(booking);
+
+        // Notify the user about the booking status change
+        if (!newStatus.equalsIgnoreCase(previousStatus)) {
+            String resName = (updated.getResourceName() != null && !updated.getResourceName().isEmpty())
+                    ? updated.getResourceName() : updated.getResourceId();
+            String title;
+            String message;
+            if ("APPROVED".equalsIgnoreCase(newStatus)) {
+                title = "Booking Approved ✅";
+                message = "Your booking (" + updated.getBookingId() + ") for " + resName
+                        + " on " + updated.getDate() + " has been approved.";
+            } else if ("REJECTED".equalsIgnoreCase(newStatus)) {
+                String reason = body.get("reason");
+                title = "Booking Rejected ❌";
+                message = "Your booking (" + updated.getBookingId() + ") for " + resName
+                        + " was rejected" + (reason != null ? ": " + reason : ".");
+            } else {
+                title = "Booking Status Updated";
+                message = "Your booking (" + updated.getBookingId() + ") status changed to " + newStatus + ".";
+            }
+            Notification userNotification = new Notification(
+                "BOOKING_UPDATE", title, message, updated.getId(), updated.getUserEmail()
+            );
+            notificationRepository.save(userNotification);
+        }
+
         return ResponseEntity.ok(updated);
     }
 
