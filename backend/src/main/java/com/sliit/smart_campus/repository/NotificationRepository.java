@@ -8,6 +8,13 @@ import java.util.List;
 
 @Repository
 public interface NotificationRepository extends MongoRepository<Notification, String> {
+    // Admin-wide: targetEmail is null
     List<Notification> findByOrderByCreatedAtDesc();
     List<Notification> findByReadOrderByCreatedAtDesc(boolean read);
+    List<Notification> findByTargetEmailIsNullOrderByCreatedAtDesc();
+
+    // User-specific
+    List<Notification> findByTargetEmailOrderByCreatedAtDesc(String targetEmail);
+    List<Notification> findByTargetEmailAndReadOrderByCreatedAtDesc(String targetEmail, boolean read);
+    void deleteByTargetEmail(String targetEmail);
 }

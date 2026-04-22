@@ -9,10 +9,11 @@ import java.time.LocalDateTime;
 public class Notification {
     @Id
     private String id;
-    private String type; // TICKET, REGISTRATION, BOOKING
+    private String type;       // TICKET, REGISTRATION, BOOKING, TICKET_UPDATE, BOOKING_UPDATE
     private String title;
     private String message;
-    private String targetId; // ID of the ticket, user, or booking
+    private String targetId;   // ID of the related entity
+    private String targetEmail; // null = admin-wide; set = user-specific
     private boolean read = false;
     private LocalDateTime createdAt;
 
@@ -20,11 +21,23 @@ public class Notification {
         this.createdAt = LocalDateTime.now();
     }
 
+    // Constructor for admin-wide notifications (no targetEmail)
     public Notification(String type, String title, String message, String targetId) {
         this.type = type;
         this.title = title;
         this.message = message;
         this.targetId = targetId;
+        this.createdAt = LocalDateTime.now();
+        this.read = false;
+    }
+
+    // Constructor for user-specific notifications
+    public Notification(String type, String title, String message, String targetId, String targetEmail) {
+        this.type = type;
+        this.title = title;
+        this.message = message;
+        this.targetId = targetId;
+        this.targetEmail = targetEmail;
         this.createdAt = LocalDateTime.now();
         this.read = false;
     }
@@ -44,6 +57,9 @@ public class Notification {
 
     public String getTargetId() { return targetId; }
     public void setTargetId(String targetId) { this.targetId = targetId; }
+
+    public String getTargetEmail() { return targetEmail; }
+    public void setTargetEmail(String targetEmail) { this.targetEmail = targetEmail; }
 
     public boolean isRead() { return read; }
     public void setRead(boolean read) { this.read = read; }
