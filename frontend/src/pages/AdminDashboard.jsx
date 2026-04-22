@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import NotificationPanel from "../components/NotificationPanel";
 import ResourceModal from "./Resources/ResourceModal";
+import CommentSection from "../components/CommentSection";
 import api from "../api/axiosConfig";
 
 const sidebarLinks = [
@@ -133,7 +134,7 @@ export default function AdminDashboard() {
           {activeTab === "users"     && <UserManagementSection />}
           {activeTab === "bookings"  && <BookingManagementSection />}
           {activeTab === "resources" && <ResourceManagementSection />}
-          {activeTab === "tickets"   && <TicketManagementSection />}
+          {activeTab === "tickets"   && <TicketManagementSection user={user} />}
         </div>
       </main>
     </div>
@@ -1106,7 +1107,7 @@ function StatusBadge({ status }) {
   );
 }
 
-function TicketManagementSection() {
+function TicketManagementSection({ user }) {
   const [tickets,        setTickets]        = useState([]);
   const [search,         setSearch]         = useState("");
   const [statusFilter,   setStatusFilter]   = useState("All");
@@ -1141,7 +1142,16 @@ function TicketManagementSection() {
 
 
 
-  const updateStatus = async (id, newStatus) => {
+  const updateStatus = async (ticket, newStatus) => {
+    const id = ticket.id || ticket._id;
+    if (newStatus === "Rejected") {
+      handleRejectPrompt(id);
+      return;
+    }
+    if (newStatus === "In Progress") {
+      setExpandedId(id);
+      setAssignmentModalTicket(ticket); // Note: We need the full ticket object here. 
+    }
     try {
       await api.put(`/api/tickets/${id}/status`, { status: newStatus });
       // Reload or update locally
@@ -1153,9 +1163,21 @@ function TicketManagementSection() {
     }
   };
 
-  const deleteTicket = (id) => {
+  const handleRejectPrompt = (id) => {
     setRejectingTicketId(id);
     setRejectionReason("");
+  };
+
+  const handlePermanentDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to permanently delete this closed ticket? This action cannot be undone.")) return;
+    try {
+      await api.delete(`/api/tickets/${id}`);
+      setTickets(prev => prev.filter(t => (t.id || t._id) !== id));
+      window.dispatchEvent(new Event("ticket-submitted"));
+    } catch (err) {
+      console.error("Failed to delete ticket:", err);
+      alert("Failed to delete ticket.");
+    }
   };
 
   const confirmRejection = async () => {
@@ -1416,17 +1438,18 @@ function TicketManagementSection() {
 
         {/* Rows */}
         {filtered.map((ticket) => {
+          const ticket_id = ticket.id || ticket._id;
           const priorityCfg = PRIORITY_CFG[ticket.priority] || { label: ticket.priority, color: "#94a3b8" };
-          const isExpanded  = expandedId === ticket.id;
+          const isExpanded  = expandedId === ticket_id;
           const date = new Date(ticket.createdAt).toLocaleDateString("en-GB", {
             day: "2-digit", month: "short", year: "numeric",
           });
 
           return (
-            <div key={ticket.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+            <div key={ticket_id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
               {/* Main row */}
               <div
-                onClick={() => setExpandedId(isExpanded ? null : ticket.id)}
+                onClick={() => setExpandedId(isExpanded ? null : ticket_id)}
                 style={{
                   display: "grid", gridTemplateColumns: TH_COLS,
                   alignItems: "center",
@@ -1479,7 +1502,7 @@ function TicketManagementSection() {
                   <div style={{ position: "relative" }}>
                     <select
                       value={ticket.status}
-                      onChange={(e) => updateStatus(ticket.id, e.target.value)}
+                      onChange={(e) => updateStatus(ticket, e.target.value)}
                       style={{
                         appearance: "none",
                         padding: "0.3rem 1.75rem 0.3rem 0.65rem",
@@ -1499,26 +1522,30 @@ function TicketManagementSection() {
                     }} />
                   </div>
 
-                  {/* Delete */}
-                  <button
-                    onClick={() => deleteTicket(ticket.id)}
-                    title="Delete ticket"
-                    style={{
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      width: "2rem", height: "2rem", borderRadius: "0.5rem",
-                      border: "1px solid rgba(239,68,68,0.15)",
-                      background: "rgba(239,68,68,0.06)",
-                      color: "#f87171", cursor: "pointer", transition: "background 0.15s",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.2)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.06)"; }}
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  {/* Permanent Delete for Closed Tickets */}
+                  {ticket.status === "Closed" && (
+                    <button
+                      onClick={() => handlePermanentDelete(ticket_id)}
+                      title="Permanently delete closed ticket"
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        width: "2rem", height: "2rem", borderRadius: "0.5rem",
+                        border: "1px solid rgba(239,68,68,0.15)",
+                        background: "rgba(239,68,68,0.06)",
+                        color: "#f87171", cursor: "pointer", transition: "background 0.15s",
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.2)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.06)"; }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+
+
 
                   {/* Expand / collapse */}
                   <button
-                    onClick={() => setExpandedId(isExpanded ? null : ticket.id)}
+                    onClick={() => setExpandedId(isExpanded ? null : ticket_id)}
                     title={isExpanded ? "Collapse" : "Expand details"}
                     style={{
                       display: "flex", alignItems: "center", justifyContent: "center",
@@ -1699,6 +1726,10 @@ function TicketManagementSection() {
                       {ticket.id}
                     </span>
                   </div>
+                    {/* Collaboration Hub */}
+                    <div style={{ marginTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.02)", paddingTop: "0.5rem" }}>
+                      <CommentSection ticketId={ticket_id} user={user} />
+                    </div>
                 </div>
               )}
             </div>

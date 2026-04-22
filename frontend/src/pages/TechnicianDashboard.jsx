@@ -3,6 +3,7 @@ import { Shield, Hammer, LogOut, Settings, ClipboardList, AlertCircle, Bell, Clo
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import UserNotificationPanel from '../components/UserNotificationPanel';
+import CommentSection from '../components/CommentSection';
 import { formatDistanceToNow } from "date-fns";
 
 export default function TechnicianDashboard() {
@@ -13,6 +14,7 @@ export default function TechnicianDashboard() {
   const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
   const [resolutionNote, setResolutionNote] = useState("");
   const [activeTab, setActiveTab] = useState("overview"); // "overview" | "tasks"
+  const [expandedTicketId, setExpandedTicketId] = useState(null);
   const [activity, setActivity] = useState([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
   const user = JSON.parse(sessionStorage.getItem("user") || "{}");
@@ -106,6 +108,13 @@ export default function TechnicianDashboard() {
                 {tickets.filter(t => t.status !== 'Resolved').length}
               </span>
             )}
+          </button>
+          <button 
+            onClick={() => navigate("/tickets")}
+            className="flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-sm font-bold text-slate-400 transition-all hover:bg-white/5 hover:text-white"
+          >
+            <Ticket size={20} />
+            <span>Campus Tickets</span>
           </button>
         </nav>
         <div className="absolute bottom-0 w-full p-6">
@@ -233,41 +242,53 @@ export default function TechnicianDashboard() {
                 <div className="space-y-4">
                   {tickets.map((ticket) => {
                     const status = getStatusStyle(ticket.status);
+                    const isExpanded = expandedTicketId === ticket.id;
                     return (
-                      <div key={ticket.id} className="p-6 rounded-3xl bg-slate-800/30 border border-white/5 flex flex-col md:flex-row md:items-center gap-6 hover:bg-slate-800/50 transition-all group">
-                        <div className={`h-12 w-12 rounded-2xl ${status.bg} ${status.text} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
-                          <Hammer size={24} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-1">
-                            <h4 className="font-bold text-white">{ticket.resource}</h4>
-                            <span className="text-[10px] font-mono text-slate-500">#{ticket.ticketId}</span>
-                          </div>
-                          <p className="text-sm text-slate-400 line-clamp-1">{ticket.description}</p>
-                          {ticket.status === 'Resolved' && ticket.resolutionNote && (
-                            <div className="mt-2 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                              <span className="text-[9px] font-black text-emerald-400 uppercase tracking-tighter block mb-1">Resolution Note</span>
-                              <p className="text-[11px] text-slate-300 italic">"{ticket.resolutionNote}"</p>
+                      <div key={ticket.id} className="p-6 rounded-3xl bg-slate-800/30 border border-white/5 flex flex-col gap-6 hover:bg-slate-800/50 transition-all group">
+                        <div className="flex flex-col md:flex-row md:items-center gap-6">
+                            <div className={`h-12 w-12 rounded-2xl ${status.bg} ${status.text} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
+                            <Hammer size={24} />
                             </div>
-                          )}
+                            <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-1">
+                                    <h4 className="font-bold text-white">{ticket.resource}</h4>
+                                    <span className="text-[10px] font-mono text-slate-500">#{ticket.ticketId}</span>
+                                </div>
+                                <p className="text-sm text-slate-400 line-clamp-1">{ticket.description}</p>
+                                {ticket.status === 'Resolved' && ticket.resolutionNote && (
+                                    <div className="mt-2 p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
+                                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-tighter block mb-1">Resolution Note</span>
+                                        <p className="text-[11px] text-slate-300 italic">"{ticket.resolutionNote}"</p>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex flex-col md:items-end gap-2">
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${status.bg} ${status.text}`}>
+                                    {ticket.status}
+                                </span>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => setExpandedTicketId(isExpanded ? null : ticket.id)}
+                                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all bg-white/5 border border-white/10 ${isExpanded ? 'text-amber-400 border-amber-500/30 bg-amber-500/5' : 'text-slate-500'}`}
+                                    >
+                                        <Ticket size={11} /> {isExpanded ? 'Close Hub' : 'Discuss'}
+                                    </button>
+                                    {ticket.status !== 'Resolved' && (
+                                        <button 
+                                            onClick={() => { setSelectedTicket(ticket); setIsResolveModalOpen(true); }}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase hover:bg-emerald-500/20 transition-all border border-emerald-500/20"
+                                        >
+                                            <CheckCircle2 size={12} /> Resolve
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex flex-col md:items-end gap-2">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${status.bg} ${status.text}`}>
-                            {ticket.status}
-                          </span>
-                          {ticket.status !== 'Resolved' ? (
-                            <button 
-                              onClick={() => { setSelectedTicket(ticket); setIsResolveModalOpen(true); }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase hover:bg-emerald-500/20 transition-all border border-emerald-500/20 mt-1"
-                            >
-                              <CheckCircle2 size={12} /> Resolve
-                            </button>
-                          ) : (
-                            <span className="text-xs text-slate-500 flex items-center gap-1">
-                               <Settings size={12} /> {ticket.location || 'Unknown'}
-                            </span>
-                          )}
-                        </div>
+                        {isExpanded && (
+                            <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <CommentSection ticketId={ticket.id} user={user} />
+                            </div>
+                        )}
                       </div>
                     );
                   })}
