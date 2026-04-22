@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import AdminDashboard from "./pages/AdminDashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import TechnicianDashboard from "./pages/TechnicianDashboard";
+import Tickets from "./pages/Tickets";
 import RaiseTicketButton from "./components/RaiseTicketButton";
 
 /** Returns true when a user session exists in sessionStorage */
@@ -64,6 +65,7 @@ function App() {
         <Route path="/resources" element={<ResourceList />} />
         <Route path="/user/resources" element={<UserResourceList />} />
         <Route path="/equipment" element={<EquipmentList />} />
+        <Route path="/tickets" element={<Tickets />} />
         {/* Marketing / landing dashboard */}
         <Route path="/dashboard" element={<Dashboard />} />
         {/* Logged-in user dashboard */}
