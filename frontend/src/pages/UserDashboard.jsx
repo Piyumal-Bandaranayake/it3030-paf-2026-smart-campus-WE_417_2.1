@@ -748,6 +748,7 @@ export default function UserDashboard() {
 
   const handleSidebarNavigation = (label) => {
     if (label === "Resources")  { navigate("/resources"); return; }
+    if (label === "Tickets")    { navigate("/tickets");   return; }
     if (label === "Alerts")     { setActiveView("dashboard"); setTimeout(() => recentActivityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); return; }
     if (label === "My Tickets") { setActiveView("tickets");   return; }
     if (label === "Bookings")    { setActiveView("bookings");  return; }
@@ -762,6 +763,7 @@ export default function UserDashboard() {
     { icon: BarChart3,     label: "Dashboard"  },
     { icon: Building2,     label: "Resources"  },
     { icon: CalendarCheck, label: "Bookings"   },
+    { icon: Ticket,        label: "Tickets"    },
     { icon: Wrench,        label: "Maintenance"},
     { icon: Bell,          label: "Alerts"     },
   ];

@@ -3,6 +3,7 @@ import { Shield, LayoutDashboard, LogOut, Settings, Building2, Bell, Clock, Aler
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import UserNotificationPanel from '../components/UserNotificationPanel';
+import CommentSection from '../components/CommentSection';
 import { formatDistanceToNow } from "date-fns";
 
 export default function ManagerDashboard() {
@@ -13,6 +14,7 @@ export default function ManagerDashboard() {
   const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
   const [resolutionNote, setResolutionNote] = useState("");
   const [activeTab, setActiveTab] = useState("overview"); // "overview" | "tasks"
+  const [expandedTicketId, setExpandedTicketId] = useState(null);
   const [activity, setActivity] = useState([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
   const user = JSON.parse(sessionStorage.getItem("user") || "{}");
@@ -106,6 +108,13 @@ export default function ManagerDashboard() {
                 {tickets.filter(t => t.status !== 'Resolved').length}
               </span>
             )}
+          </button>
+          <button 
+            onClick={() => navigate("/tickets")}
+            className="flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-sm font-bold text-slate-400 transition-all hover:bg-white/5 hover:text-white"
+          >
+            <Ticket size={20} />
+            <span>Campus Tickets</span>
           </button>
         </nav>
         <div className="absolute bottom-0 w-full p-6">
@@ -258,11 +267,13 @@ export default function ManagerDashboard() {
                             <p className="text-[11px] text-slate-300 italic">"{ticket.resolutionNote}"</p>
                           </div>
                         )}
-                        <div className="flex items-center gap-4 pt-4 border-t border-white/5 mt-auto">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] text-slate-500 uppercase font-black">Technician</span>
-                            <span className="text-xs font-bold text-indigo-300">{ticket.assignedTechnician || 'Unassigned'}</span>
-                          </div>
+                        <div className="flex items-center gap-2 pt-4 border-t border-white/5 mt-auto">
+                          <button 
+                            onClick={() => setExpandedTicketId(expandedTicketId === ticket.id ? null : ticket.id)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all border ${expandedTicketId === ticket.id ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-white/5 text-slate-400 border-white/5 hover:text-white'}`}
+                          >
+                            <Ticket size={12} /> {expandedTicketId === ticket.id ? 'Close Hub' : 'Collaborate'}
+                          </button>
                           <div className="flex flex-col ml-auto text-right">
                              {ticket.status !== 'Resolved' ? (
                                <button 
@@ -279,6 +290,11 @@ export default function ManagerDashboard() {
                              )}
                           </div>
                         </div>
+                        {expandedTicketId === ticket.id && (
+                          <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                             <CommentSection ticketId={ticket.id} user={user} />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
