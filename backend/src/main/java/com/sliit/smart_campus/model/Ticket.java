@@ -27,6 +27,7 @@ public class Ticket {
     private String rejectionReason;
     private String assignedTechnician;
     private String assignedManager;
+    private String resolutionNote;
 
     public Ticket() {}
 
@@ -105,4 +106,7 @@ public class Ticket {
 
     public String getAssignedManager() { return assignedManager; }
     public void setAssignedManager(String assignedManager) { this.assignedManager = assignedManager; }
+
+    public String getResolutionNote() { return resolutionNote; }
+    public void setResolutionNote(String resolutionNote) { this.resolutionNote = resolutionNote; }
 }

@@ -351,6 +351,24 @@ function MyTicketsView() {
                    </div>
                 )}
 
+                {/* Resolution Note */}
+                {ticket.status === "Resolved" && ticket.resolutionNote && (
+                   <div style={{
+                     margin: "0 0 0.8rem",
+                     padding: "0.75rem 1rem",
+                     borderRadius: "0.75rem",
+                     background: "rgba(34,197,94,0.05)",
+                     border: "1px solid rgba(34,197,94,0.15)",
+                   }}>
+                     <div style={{ fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", color: "#4ade80", marginBottom: "0.25rem" }}>
+                       Resolution Note
+                     </div>
+                     <p style={{ margin: 0, fontSize: "0.75rem", color: "#86efac" }}>
+                       {ticket.resolutionNote}
+                     </p>
+                   </div>
+                )}
+
                 {/* Row 4: Images & Date */}
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "1rem" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.65rem", color: "#334155" }}>
