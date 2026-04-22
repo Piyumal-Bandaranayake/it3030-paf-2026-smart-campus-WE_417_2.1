@@ -1182,12 +1182,18 @@ function TicketManagementSection() {
     }
   };
   
-  const handleAssignStaff = async (staffName, role) => {
+  const handleAssignStaff = async (staffName, role, staffEmail) => {
     setAssigningLoading(true);
     try {
       const payload = {};
-      if (role === "TECHNICIAN") payload.technician = staffName;
-      if (role === "MANAGER")    payload.manager = staffName;
+      if (role === "TECHNICIAN") {
+        payload.technician = staffName;
+        payload.technicianEmail = staffEmail;
+      }
+      if (role === "MANAGER") {
+        payload.manager = staffName;
+        payload.managerEmail = staffEmail;
+      }
       
       await api.put(`/api/tickets/${assignmentModalTicket.id}/assign`, payload);
       
@@ -1811,7 +1817,7 @@ function TicketManagementSection() {
                     {allUsers.filter(u => u.role === role.id).map(u => (
                       <button
                         key={u.id}
-                        onClick={() => handleAssignStaff(u.name, role.id)}
+                        onClick={() => handleAssignStaff(u.name, role.id, u.email)}
                         disabled={assigningLoading}
                         style={{
                           display: "flex", alignItems: "center", gap: "0.85rem",

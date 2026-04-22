@@ -26,7 +26,9 @@ public class Ticket {
     private List<String> images;
     private String rejectionReason;
     private String assignedTechnician;
+    private String assignedTechnicianEmail;
     private String assignedManager;
+    private String assignedManagerEmail;
     private String resolutionNote;
 
     public Ticket() {}
@@ -104,8 +106,14 @@ public class Ticket {
     public String getAssignedTechnician() { return assignedTechnician; }
     public void setAssignedTechnician(String assignedTechnician) { this.assignedTechnician = assignedTechnician; }
 
+    public String getAssignedTechnicianEmail() { return assignedTechnicianEmail; }
+    public void setAssignedTechnicianEmail(String assignedTechnicianEmail) { this.assignedTechnicianEmail = assignedTechnicianEmail; }
+
     public String getAssignedManager() { return assignedManager; }
     public void setAssignedManager(String assignedManager) { this.assignedManager = assignedManager; }
+
+    public String getAssignedManagerEmail() { return assignedManagerEmail; }
+    public void setAssignedManagerEmail(String assignedManagerEmail) { this.assignedManagerEmail = assignedManagerEmail; }
 
     public String getResolutionNote() { return resolutionNote; }
     public void setResolutionNote(String resolutionNote) { this.resolutionNote = resolutionNote; }
