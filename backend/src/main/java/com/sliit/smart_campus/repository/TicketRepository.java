@@ -8,4 +8,6 @@ public interface TicketRepository extends MongoRepository<Ticket, String> {
     List<Ticket> findByUserEmail(String userEmail);
     List<Ticket> findByAssignedTechnician(String technician);
     List<Ticket> findByAssignedManager(String manager);
+    List<Ticket> findByAssignedTechnicianEmail(String technicianEmail);
+    List<Ticket> findByAssignedManagerEmail(String managerEmail);
 }
