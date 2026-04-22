@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface TicketRepository extends MongoRepository<Ticket, String> {
     List<Ticket> findByUserEmail(String userEmail);
-    List<Ticket> findByStatus(String status);
+    List<Ticket> findByAssignedTechnician(String technician);
+    List<Ticket> findByAssignedManager(String manager);
 }

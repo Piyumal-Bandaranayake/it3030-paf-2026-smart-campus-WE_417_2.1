@@ -207,22 +207,109 @@ function OverviewSection() {
 }
 
 function UserManagementSection() {
-  const users = [
-    { name: "John Doe", email: "john@university.edu", role: "Student", status: "Active" },
-    { name: "Sarah Smith", email: "sarah@university.edu", role: "Staff", status: "Active" },
-    { name: "Robert Wilson", email: "robert@university.edu", role: "Maintenance", status: "Suspended" },
-    { name: "Emma Davis", email: "emma@university.edu", role: "Student", status: "Active" },
-  ];
+  const [users, setUsers] = useState([]);
+  const [addUserModalOpen, setAddUserModalOpen] = useState(false);
+  const [newUser, setNewUser] = useState({ name: "", email: "", phone: "", role: "USER" });
+  const [addingUser, setAddingUser] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const response = await api.get("/api/users");
+      setUsers(response.data || []);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+      setError("Unable to load users. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    if (!newUser.name || !newUser.email) {
+      alert("Please fill in at least name and email.");
+      return;
+    }
+
+    try {
+      setAddingUser(true);
+      const response = await api.post("/api/users", newUser);
+      setUsers((prev) => [...prev, response.data]);
+      setAddUserModalOpen(false);
+      setNewUser({ name: "", email: "", phone: "", role: "USER" });
+      alert("User added successfully! They can now log in using their Google account with this email.");
+    } catch (err) {
+      console.error("Failed to add user:", err);
+      let message = "Failed to add user. Please try again.";
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          message = err.response.data;
+        } else if (err.response.data.message) {
+          message = err.response.data.message;
+        }
+      }
+      alert(message);
+    } finally {
+      setAddingUser(false);
+    }
+  };
+
+  const deleteUser = async (id) => {
+    if (!window.confirm("Are you sure you want to remove this user? This action cannot be undone.")) return;
+    
+    try {
+      await api.delete(`/api/users/${id}`);
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+    } catch (err) {
+      console.error("Failed to delete user:", err);
+      alert("Failed to delete user. Please try again.");
+    }
+  };
+
+  const filteredUsers = users.filter((u) => {
+    if (roleFilter === "ALL") return true;
+    return (u.role || "").toUpperCase() === roleFilter;
+  });
+
+  if (loading) return <div className="py-20 text-center text-slate-500">Loading users...</div>;
+  if (error) return <div className="py-20 text-center text-red-400">{error}</div>;
 
   return (
     <div className="rounded-[32px] border border-white/5 bg-slate-900/40 backdrop-blur-xl overflow-hidden">
-      <div className="p-8 flex items-center justify-between border-b border-white/5">
-        <h3 className="text-xl font-bold">Registered Users</h3>
-        <div className="flex gap-4">
-          <button className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-xs font-bold border border-white/5">
-            <Filter size={14} /> Filter
-          </button>
-          <button className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white">
+      <div className="p-8 flex flex-col gap-6 border-b border-white/5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-xl font-bold">Registered Users</h3>
+          <p className="text-xs text-slate-500 mt-1">Total {filteredUsers.length} users found</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap gap-2">
+            {["ALL", "ADMIN", "USER", "TECHNICIAN", "MANAGER"].map((r) => (
+              <button
+                key={r}
+                onClick={() => setRoleFilter(r)}
+                className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
+                  roleFilter === r
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                    : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+          <button 
+            onClick={() => setAddUserModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-600/20"
+          >
             <Plus size={14} /> Add User
           </button>
         </div>
@@ -238,34 +325,115 @@ function UserManagementSection() {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {users.map((u, i) => (
-              <tr key={i} className="group hover:bg-white/[0.02] transition-colors">
+            {filteredUsers.map((u, i) => (
+              <tr key={u.id || i} className="group hover:bg-white/[0.02] transition-colors">
                 <td className="px-8 py-6">
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center font-bold text-slate-400">{u.name[0]}</div>
+                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center font-bold text-slate-400">
+                      {(u.name || "U")[0].toUpperCase()}
+                    </div>
                     <div>
-                      <div className="text-sm font-bold text-white">{u.name}</div>
-                      <div className="text-xs text-slate-500">{u.email}</div>
+                      <div className="text-sm font-bold text-white">{u.name || "Unknown User"}</div>
+                      <div className="text-xs text-slate-500">{u.email || "No Email"}</div>
                     </div>
                   </div>
                 </td>
                 <td className="px-8 py-6">
-                  <span className="text-sm font-medium text-slate-300">{u.role}</span>
+                  <span className="text-sm font-medium text-slate-300">{u.role || "USER"}</span>
                 </td>
                 <td className="px-8 py-6">
-                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wider ${u.status === 'Active' ? 'text-emerald-400 bg-emerald-400/10' : 'text-red-400 bg-red-400/10'}`}>
-                    <div className={`h-1 w-1 rounded-full ${u.status === 'Active' ? 'bg-emerald-400' : 'bg-red-400'}`} />
-                    {u.status}
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wider ${(u.status || 'Active') === 'Active' ? 'text-emerald-400 bg-emerald-400/10' : 'text-red-400 bg-red-400/10'}`}>
+                    <div className={`h-1 w-1 rounded-full ${(u.status || 'Active') === 'Active' ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                    {u.status || 'Active'}
                   </span>
                 </td>
                 <td className="px-8 py-6 text-right">
-                  <button className="p-2 rounded-lg bg-white/5 text-slate-500 hover:text-white transition-all"><MoreVertical size={16} /></button>
+                  <button 
+                    onClick={() => deleteUser(u.id)}
+                    className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all"
+                    title="Remove User"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Add User Modal */}
+      {addUserModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-[32px] border border-white/10 bg-slate-900 p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-xl font-bold text-white mb-6">Add New User</h3>
+            <form onSubmit={handleAddUser} className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  className="w-full rounded-xl border border-white/5 bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none"
+                  placeholder="e.g. John Doe"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="w-full rounded-xl border border-white/5 bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none"
+                  placeholder="name@university.edu"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Phone Number</label>
+                <input
+                  type="text"
+                  value={newUser.phone}
+                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
+                  className="w-full rounded-xl border border-white/5 bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none"
+                  placeholder="+94 7X XXX XXXX"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Role</label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="w-full rounded-xl border border-white/5 bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none appearance-none"
+                >
+                  <option value="USER">User (Student/Staff)</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="TECHNICIAN">Technician</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+              
+              <div className="flex gap-3 mt-8">
+                <button
+                  type="button"
+                  onClick={() => setAddUserModalOpen(false)}
+                  className="flex-1 rounded-xl bg-white/5 py-3 text-sm font-bold text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addingUser}
+                  className="flex-1 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 disabled:opacity-50"
+                >
+                  {addingUser ? "Adding..." : "Add User"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -940,6 +1108,50 @@ function TicketManagementSection() {
       setIsSubmittingReject(false);
     }
   };
+  
+  const handleAssignStaff = async (staffName, role) => {
+    setAssigningLoading(true);
+    try {
+      const payload = {};
+      if (role === "TECHNICIAN") payload.technician = staffName;
+      if (role === "MANAGER")    payload.manager = staffName;
+      
+      await api.put(`/api/tickets/${assignmentModalTicket.id}/assign`, payload);
+      
+      setTickets(prev => prev.map(t => t.id === assignmentModalTicket.id ? { 
+        ...t, 
+        assignedTechnician: role === "TECHNICIAN" ? staffName : t.assignedTechnician,
+        assignedManager: role === "MANAGER" ? staffName : t.assignedManager
+      } : t));
+      
+      setAssignmentModalTicket(null);
+      window.dispatchEvent(new Event("ticket-submitted"));
+    } catch (err) {
+      console.error("Failed to assign staff:", err);
+      alert("Failed to assign staff. Please try again.");
+    } finally {
+      setAssigningLoading(false);
+    }
+  };
+
+  const handleUnassignStaff = async (ticketId, roleType) => {
+    try {
+      const payload = {};
+      if (roleType === "TECHNICIAN") payload.technician = null;
+      if (roleType === "MANAGER")    payload.manager = null;
+      
+      await api.put(`/api/tickets/${ticketId}/assign`, payload);
+      
+      setTickets(prev => prev.map(t => t.id === ticketId ? { 
+        ...t, 
+        assignedTechnician: roleType === "TECHNICIAN" ? null : t.assignedTechnician,
+        assignedManager: roleType === "MANAGER" ? null : t.assignedManager
+      } : t));
+    } catch (err) {
+      console.error("Failed to unassign staff:", err);
+      alert("Failed to remove assignment.");
+    }
+  };
 
   const filtered = tickets.filter((t) => {
     const matchStatus   = statusFilter   === "All" || t.status   === statusFilter;
@@ -1267,6 +1479,28 @@ function TicketManagementSection() {
                       {ticket.description}
                     </p>
 
+                    {ticket.status === 'Resolved' && ticket.resolutionNote && (
+                      <div style={{ marginTop: "1rem", padding: "1rem", borderRadius: "1rem", background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.15)" }}>
+                        <div style={{ fontSize: "0.6rem", fontWeight: 900, textTransform: "uppercase", color: "#4ade80", marginBottom: "0.4rem", letterSpacing: "0.05em" }}>
+                          Resolution Note
+                        </div>
+                        <p style={{ margin: 0, fontSize: "0.78rem", color: "#86efac", fontStyle: "italic" }}>
+                          "{ticket.resolutionNote}"
+                        </p>
+                      </div>
+                    )}
+
+                    {ticket.status === 'Rejected' && ticket.rejectionReason && (
+                      <div style={{ marginTop: "1rem", padding: "1rem", borderRadius: "1rem", background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                        <div style={{ fontSize: "0.6rem", fontWeight: 900, textTransform: "uppercase", color: "#f87171", marginBottom: "0.4rem", letterSpacing: "0.05em" }}>
+                          Rejection Reason
+                        </div>
+                        <p style={{ margin: 0, fontSize: "0.78rem", color: "#fca5a5" }}>
+                          {ticket.rejectionReason}
+                        </p>
+                      </div>
+                    )}
+
                     <div style={{ marginTop: "1rem" }}>
                       <button
                         onClick={() => setAssignmentModalTicket(ticket)}
@@ -1285,16 +1519,46 @@ function TicketManagementSection() {
                       </button>
 
                       {(ticket.assignedTechnician || ticket.assignedManager) && (
-                        <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                        <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                           {ticket.assignedTechnician && (
-                            <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
-                              Technician: <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{ticket.assignedTechnician}</span>
-                            </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                                Technician: <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{ticket.assignedTechnician}</span>
+                              </span>
+                              <button
+                                onClick={() => handleUnassignStaff(ticket.id, "TECHNICIAN")}
+                                style={{
+                                  background: "none", border: "none", color: "#ef4444", 
+                                  cursor: "pointer", display: "flex", alignItems: "center",
+                                  padding: "2px", borderRadius: "4px",
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.1)"}
+                                onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                                title="Remove Technician"
+                              >
+                                <XCircle size={12} />
+                              </button>
+                            </div>
                           )}
                           {ticket.assignedManager && (
-                            <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
-                              Manager: <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{ticket.assignedManager}</span>
-                            </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                                Manager: <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{ticket.assignedManager}</span>
+                              </span>
+                              <button
+                                onClick={() => handleUnassignStaff(ticket.id, "MANAGER")}
+                                style={{
+                                  background: "none", border: "none", color: "#ef4444", 
+                                  cursor: "pointer", display: "flex", alignItems: "center",
+                                  padding: "2px", borderRadius: "4px",
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.1)"}
+                                onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                                title="Remove Manager"
+                              >
+                                <XCircle size={12} />
+                              </button>
+                            </div>
                           )}
                         </div>
                       )}
@@ -1461,41 +1725,54 @@ function TicketManagementSection() {
               </div>
             </div>
 
-            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.75rem", paddingRight: "0.5rem" }}>
-              {["Maintenance", "Staff"].map((role) => (
-                <div key={role}>
-                  <div style={{ fontSize: "0.6rem", fontWeight: 900, textTransform: "uppercase", color: "#475569", marginBottom: "0.5rem", letterSpacing: "0.1em" }}>
-                    {role === "Maintenance" ? "Technicians" : "Managers"}
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "1rem", paddingRight: "0.5rem" }}>
+              {[
+                { id: "TECHNICIAN", label: "Technicians", color: "#818cf8" },
+                { id: "MANAGER",    label: "Managers",    color: "#c084fc" }
+              ].map((role) => (
+                <div key={role.id}>
+                  <div style={{ fontSize: "0.6rem", fontWeight: 900, textTransform: "uppercase", color: "#475569", marginBottom: "0.6rem", letterSpacing: "0.12em" }}>
+                    {role.label}
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                    {allUsers.filter(u => u.role === role).map(u => (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    {allUsers.filter(u => u.role === role.id).map(u => (
                       <button
                         key={u.id}
-                        onClick={() => handleAssignStaff(u.name, role)}
+                        onClick={() => handleAssignStaff(u.name, role.id)}
                         disabled={assigningLoading}
                         style={{
-                          display: "flex", alignItems: "center", gap: "0.75rem",
-                          padding: "0.75rem 1rem", borderRadius: "1rem",
+                          display: "flex", alignItems: "center", gap: "0.85rem",
+                          padding: "0.85rem 1.15rem", borderRadius: "1.15rem",
                           background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)",
-                          color: "#e2e8f0", fontSize: "0.85rem", textAlign: "left",
+                          color: "#e2e8f0", fontSize: "0.875rem", textAlign: "left",
                           cursor: assigningLoading ? "not-allowed" : "pointer", transition: "all 0.15s",
                         }}
-                        onMouseEnter={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; } }}
-                        onMouseLeave={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; } }}
+                        onMouseEnter={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.transform = "translateX(4px)"; } }}
+                        onMouseLeave={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = "translateX(0)"; } }}
                       >
-                        <div style={{ width: "1.75rem", height: "1.75rem", borderRadius: "50%", background: "rgba(99,102,241,0.2)", color: "#818cf8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 800 }}>
+                        <div style={{ 
+                          width: "2.25rem", height: "2.25rem", borderRadius: "0.75rem", 
+                          background: `${role.color}15`, color: role.color, 
+                          display: "flex", alignItems: "center", justifyContent: "center", 
+                          fontSize: "0.85rem", fontWeight: 800, border: `1px solid ${role.color}30` 
+                        }}>
                           {u.name[0]}
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 700 }}>{u.name}</div>
-                          <div style={{ fontSize: "0.65rem", color: "#64748b" }}>{u.email}</div>
+                          <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>{u.name}</div>
+                          <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{u.email}</div>
                         </div>
                         <ChevronRight size={14} style={{ color: "#334155" }} />
                       </button>
                     ))}
-                    {allUsers.filter(u => u.role === role).length === 0 && (
-                      <div style={{ fontSize: "0.75rem", color: "#334155", fontStyle: "italic", padding: "0.5rem" }}>
-                        No users found with this role.
+                    {allUsers.filter(u => u.role === role.id).length === 0 && (
+                      <div style={{ 
+                        fontSize: "0.75rem", color: "#475569", fontStyle: "italic", 
+                        padding: "1rem", background: "rgba(255,255,255,0.02)", 
+                        borderRadius: "1rem", border: "1px dashed rgba(255,255,255,0.05)",
+                        textAlign: "center"
+                      }}>
+                        No {role.label.toLowerCase()} available.
                       </div>
                     )}
                   </div>

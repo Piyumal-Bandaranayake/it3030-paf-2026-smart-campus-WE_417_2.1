@@ -8,6 +8,8 @@ import Login from "./pages/Login";
 import UserDashboard from "./pages/UserDashboard";
 import Home from "./pages/Home";
 import AdminDashboard from "./pages/AdminDashboard";
+import ManagerDashboard from "./pages/ManagerDashboard";
+import TechnicianDashboard from "./pages/TechnicianDashboard";
 import RaiseTicketButton from "./components/RaiseTicketButton";
 
 /** Returns true when a user session exists in sessionStorage */
@@ -68,6 +70,10 @@ function App() {
         <Route path="/user-dashboard" element={<UserDashboard />} />
         {/* Admin dashboard */}
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        {/* Manager dashboard */}
+        <Route path="/manager-dashboard" element={<ManagerDashboard />} />
+        {/* Technician dashboard */}
+        <Route path="/technician-dashboard" element={<TechnicianDashboard />} />
       </Routes>
 
       {/* Floating ticket button — only for regular users */}
