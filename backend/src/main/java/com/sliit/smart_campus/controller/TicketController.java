@@ -1,6 +1,8 @@
 package com.sliit.smart_campus.controller;
 
+import com.sliit.smart_campus.model.Notification;
 import com.sliit.smart_campus.model.Ticket;
+import com.sliit.smart_campus.repository.NotificationRepository;
 import com.sliit.smart_campus.repository.TicketRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,9 @@ public class TicketController {
 
     @Autowired
     private TicketRepository ticketRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @PostMapping
     public ResponseEntity<?> createTicket(
@@ -74,6 +79,16 @@ public class TicketController {
             ticket.setImages(imageUrls);
 
             Ticket savedTicket = ticketRepository.save(ticket);
+
+            // Create Notification for Admin
+            Notification notification = new Notification(
+                "TICKET",
+                "New Ticket Raised",
+                "A new ticket (" + savedTicket.getTicketId() + ") has been raised for " + resource + " by " + userEmail,
+                savedTicket.getId()
+            );
+            notificationRepository.save(notification);
+
             return new ResponseEntity<>(savedTicket, HttpStatus.CREATED);
 
         } catch (IOException e) {
