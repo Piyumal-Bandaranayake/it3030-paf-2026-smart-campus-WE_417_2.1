@@ -84,9 +84,19 @@ public class TicketController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Ticket>> getAllTickets(@RequestParam(value = "email", required = false) String email) {
+    public ResponseEntity<List<Ticket>> getAllTickets(
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "technician", required = false) String technician,
+            @RequestParam(value = "manager", required = false) String manager) {
+        
         if (email != null && !email.isEmpty()) {
             return new ResponseEntity<>(ticketRepository.findByUserEmail(email), HttpStatus.OK);
+        }
+        if (technician != null && !technician.isEmpty()) {
+            return new ResponseEntity<>(ticketRepository.findByAssignedTechnician(technician), HttpStatus.OK);
+        }
+        if (manager != null && !manager.isEmpty()) {
+            return new ResponseEntity<>(ticketRepository.findByAssignedManager(manager), HttpStatus.OK);
         }
         return new ResponseEntity<>(ticketRepository.findAll(), HttpStatus.OK);
     }
@@ -102,6 +112,7 @@ public class TicketController {
     public ResponseEntity<?> updateTicketStatus(@PathVariable String id, @RequestBody java.util.Map<String, String> payload) {
         String status = payload.get("status");
         String rejectionReason = payload.get("rejectionReason");
+        String resolutionNote = payload.get("resolutionNote");
         
         if (status == null || status.isEmpty()) {
             return new ResponseEntity<>("Status is required", HttpStatus.BAD_REQUEST);
@@ -112,6 +123,9 @@ public class TicketController {
                     ticket.setStatus(status);
                     if ("Rejected".equals(status) && rejectionReason != null) {
                         ticket.setRejectionReason(rejectionReason);
+                    }
+                    if ("Resolved".equals(status) && resolutionNote != null) {
+                        ticket.setResolutionNote(resolutionNote);
                     }
                     ticket.setUpdatedAt(LocalDateTime.now());
                     Ticket updatedTicket = ticketRepository.save(ticket);
@@ -127,8 +141,8 @@ public class TicketController {
 
         return ticketRepository.findById(id)
                 .map(ticket -> {
-                    if (technician != null) ticket.setAssignedTechnician(technician);
-                    if (manager != null) ticket.setAssignedManager(manager);
+                    if (payload.containsKey("technician")) ticket.setAssignedTechnician(technician);
+                    if (payload.containsKey("manager")) ticket.setAssignedManager(manager);
                     ticket.setUpdatedAt(LocalDateTime.now());
                     Ticket updatedTicket = ticketRepository.save(ticket);
                     return new ResponseEntity<>(updatedTicket, HttpStatus.OK);
