@@ -1108,6 +1108,50 @@ function TicketManagementSection() {
       setIsSubmittingReject(false);
     }
   };
+  
+  const handleAssignStaff = async (staffName, role) => {
+    setAssigningLoading(true);
+    try {
+      const payload = {};
+      if (role === "TECHNICIAN") payload.technician = staffName;
+      if (role === "MANAGER")    payload.manager = staffName;
+      
+      await api.put(`/api/tickets/${assignmentModalTicket.id}/assign`, payload);
+      
+      setTickets(prev => prev.map(t => t.id === assignmentModalTicket.id ? { 
+        ...t, 
+        assignedTechnician: role === "TECHNICIAN" ? staffName : t.assignedTechnician,
+        assignedManager: role === "MANAGER" ? staffName : t.assignedManager
+      } : t));
+      
+      setAssignmentModalTicket(null);
+      window.dispatchEvent(new Event("ticket-submitted"));
+    } catch (err) {
+      console.error("Failed to assign staff:", err);
+      alert("Failed to assign staff. Please try again.");
+    } finally {
+      setAssigningLoading(false);
+    }
+  };
+
+  const handleUnassignStaff = async (ticketId, roleType) => {
+    try {
+      const payload = {};
+      if (roleType === "TECHNICIAN") payload.technician = null;
+      if (roleType === "MANAGER")    payload.manager = null;
+      
+      await api.put(`/api/tickets/${ticketId}/assign`, payload);
+      
+      setTickets(prev => prev.map(t => t.id === ticketId ? { 
+        ...t, 
+        assignedTechnician: roleType === "TECHNICIAN" ? null : t.assignedTechnician,
+        assignedManager: roleType === "MANAGER" ? null : t.assignedManager
+      } : t));
+    } catch (err) {
+      console.error("Failed to unassign staff:", err);
+      alert("Failed to remove assignment.");
+    }
+  };
 
   const filtered = tickets.filter((t) => {
     const matchStatus   = statusFilter   === "All" || t.status   === statusFilter;
@@ -1435,6 +1479,28 @@ function TicketManagementSection() {
                       {ticket.description}
                     </p>
 
+                    {ticket.status === 'Resolved' && ticket.resolutionNote && (
+                      <div style={{ marginTop: "1rem", padding: "1rem", borderRadius: "1rem", background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.15)" }}>
+                        <div style={{ fontSize: "0.6rem", fontWeight: 900, textTransform: "uppercase", color: "#4ade80", marginBottom: "0.4rem", letterSpacing: "0.05em" }}>
+                          Resolution Note
+                        </div>
+                        <p style={{ margin: 0, fontSize: "0.78rem", color: "#86efac", fontStyle: "italic" }}>
+                          "{ticket.resolutionNote}"
+                        </p>
+                      </div>
+                    )}
+
+                    {ticket.status === 'Rejected' && ticket.rejectionReason && (
+                      <div style={{ marginTop: "1rem", padding: "1rem", borderRadius: "1rem", background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.15)" }}>
+                        <div style={{ fontSize: "0.6rem", fontWeight: 900, textTransform: "uppercase", color: "#f87171", marginBottom: "0.4rem", letterSpacing: "0.05em" }}>
+                          Rejection Reason
+                        </div>
+                        <p style={{ margin: 0, fontSize: "0.78rem", color: "#fca5a5" }}>
+                          {ticket.rejectionReason}
+                        </p>
+                      </div>
+                    )}
+
                     <div style={{ marginTop: "1rem" }}>
                       <button
                         onClick={() => setAssignmentModalTicket(ticket)}
@@ -1453,16 +1519,46 @@ function TicketManagementSection() {
                       </button>
 
                       {(ticket.assignedTechnician || ticket.assignedManager) && (
-                        <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                        <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                           {ticket.assignedTechnician && (
-                            <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
-                              Technician: <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{ticket.assignedTechnician}</span>
-                            </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                                Technician: <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{ticket.assignedTechnician}</span>
+                              </span>
+                              <button
+                                onClick={() => handleUnassignStaff(ticket.id, "TECHNICIAN")}
+                                style={{
+                                  background: "none", border: "none", color: "#ef4444", 
+                                  cursor: "pointer", display: "flex", alignItems: "center",
+                                  padding: "2px", borderRadius: "4px",
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.1)"}
+                                onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                                title="Remove Technician"
+                              >
+                                <XCircle size={12} />
+                              </button>
+                            </div>
                           )}
                           {ticket.assignedManager && (
-                            <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
-                              Manager: <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{ticket.assignedManager}</span>
-                            </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                              <span style={{ fontSize: "0.7rem", color: "#64748b" }}>
+                                Manager: <span style={{ color: "#e2e8f0", fontWeight: 700 }}>{ticket.assignedManager}</span>
+                              </span>
+                              <button
+                                onClick={() => handleUnassignStaff(ticket.id, "MANAGER")}
+                                style={{
+                                  background: "none", border: "none", color: "#ef4444", 
+                                  cursor: "pointer", display: "flex", alignItems: "center",
+                                  padding: "2px", borderRadius: "4px",
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(239,68,68,0.1)"}
+                                onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                                title="Remove Manager"
+                              >
+                                <XCircle size={12} />
+                              </button>
+                            </div>
                           )}
                         </div>
                       )}
@@ -1629,41 +1725,54 @@ function TicketManagementSection() {
               </div>
             </div>
 
-            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.75rem", paddingRight: "0.5rem" }}>
-              {["Maintenance", "Staff"].map((role) => (
-                <div key={role}>
-                  <div style={{ fontSize: "0.6rem", fontWeight: 900, textTransform: "uppercase", color: "#475569", marginBottom: "0.5rem", letterSpacing: "0.1em" }}>
-                    {role === "Maintenance" ? "Technicians" : "Managers"}
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "1rem", paddingRight: "0.5rem" }}>
+              {[
+                { id: "TECHNICIAN", label: "Technicians", color: "#818cf8" },
+                { id: "MANAGER",    label: "Managers",    color: "#c084fc" }
+              ].map((role) => (
+                <div key={role.id}>
+                  <div style={{ fontSize: "0.6rem", fontWeight: 900, textTransform: "uppercase", color: "#475569", marginBottom: "0.6rem", letterSpacing: "0.12em" }}>
+                    {role.label}
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                    {allUsers.filter(u => u.role === role).map(u => (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    {allUsers.filter(u => u.role === role.id).map(u => (
                       <button
                         key={u.id}
-                        onClick={() => handleAssignStaff(u.name, role)}
+                        onClick={() => handleAssignStaff(u.name, role.id)}
                         disabled={assigningLoading}
                         style={{
-                          display: "flex", alignItems: "center", gap: "0.75rem",
-                          padding: "0.75rem 1rem", borderRadius: "1rem",
+                          display: "flex", alignItems: "center", gap: "0.85rem",
+                          padding: "0.85rem 1.15rem", borderRadius: "1.15rem",
                           background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)",
-                          color: "#e2e8f0", fontSize: "0.85rem", textAlign: "left",
+                          color: "#e2e8f0", fontSize: "0.875rem", textAlign: "left",
                           cursor: assigningLoading ? "not-allowed" : "pointer", transition: "all 0.15s",
                         }}
-                        onMouseEnter={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; } }}
-                        onMouseLeave={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; } }}
+                        onMouseEnter={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.transform = "translateX(4px)"; } }}
+                        onMouseLeave={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = "translateX(0)"; } }}
                       >
-                        <div style={{ width: "1.75rem", height: "1.75rem", borderRadius: "50%", background: "rgba(99,102,241,0.2)", color: "#818cf8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 800 }}>
+                        <div style={{ 
+                          width: "2.25rem", height: "2.25rem", borderRadius: "0.75rem", 
+                          background: `${role.color}15`, color: role.color, 
+                          display: "flex", alignItems: "center", justifyContent: "center", 
+                          fontSize: "0.85rem", fontWeight: 800, border: `1px solid ${role.color}30` 
+                        }}>
                           {u.name[0]}
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 700 }}>{u.name}</div>
-                          <div style={{ fontSize: "0.65rem", color: "#64748b" }}>{u.email}</div>
+                          <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>{u.name}</div>
+                          <div style={{ fontSize: "0.7rem", color: "#64748b" }}>{u.email}</div>
                         </div>
                         <ChevronRight size={14} style={{ color: "#334155" }} />
                       </button>
                     ))}
-                    {allUsers.filter(u => u.role === role).length === 0 && (
-                      <div style={{ fontSize: "0.75rem", color: "#334155", fontStyle: "italic", padding: "0.5rem" }}>
-                        No users found with this role.
+                    {allUsers.filter(u => u.role === role.id).length === 0 && (
+                      <div style={{ 
+                        fontSize: "0.75rem", color: "#475569", fontStyle: "italic", 
+                        padding: "1rem", background: "rgba(255,255,255,0.02)", 
+                        borderRadius: "1rem", border: "1px dashed rgba(255,255,255,0.05)",
+                        textAlign: "center"
+                      }}>
+                        No {role.label.toLowerCase()} available.
                       </div>
                     )}
                   </div>
