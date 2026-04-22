@@ -1,7 +1,9 @@
 package com.sliit.smart_campus.controller;
 
 import com.sliit.smart_campus.model.Booking;
+import com.sliit.smart_campus.model.Notification;
 import com.sliit.smart_campus.repository.BookingRepository;
+import com.sliit.smart_campus.repository.NotificationRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,9 +19,11 @@ import java.util.Optional;
 public class BookingController {
 
     private final BookingRepository bookingRepository;
+    private final NotificationRepository notificationRepository;
 
-    public BookingController(BookingRepository bookingRepository) {
+    public BookingController(BookingRepository bookingRepository, NotificationRepository notificationRepository) {
         this.bookingRepository = bookingRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     // Create a new booking (user)
@@ -51,6 +55,20 @@ public class BookingController {
         booking.setCreatedAt(LocalDateTime.now());
 
         Booking savedBooking = bookingRepository.save(booking);
+
+        // Create Notification for Admin
+        String resName = (savedBooking.getResourceName() != null && !savedBooking.getResourceName().isEmpty())
+                         ? savedBooking.getResourceName()
+                         : booking.getResourceId();
+
+        Notification notification = new Notification(
+            "BOOKING",
+            "New Resource Booking",
+            "A new booking (" + savedBooking.getBookingId() + ") has been made for " + resName + " by " + booking.getUserEmail(),
+            savedBooking.getId()
+        );
+        notificationRepository.save(notification);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(savedBooking);
     }
 
@@ -83,6 +101,7 @@ public class BookingController {
         }
 
         Booking booking = optionalBooking.get();
+        String previousStatus = booking.getStatus();
         booking.setStatus(newStatus.toUpperCase());
         
         if ("REJECTED".equalsIgnoreCase(newStatus)) {
@@ -90,6 +109,32 @@ public class BookingController {
         }
         
         Booking updated = bookingRepository.save(booking);
+
+        // Notify the user about the booking status change
+        if (!newStatus.equalsIgnoreCase(previousStatus)) {
+            String resName = (updated.getResourceName() != null && !updated.getResourceName().isEmpty())
+                    ? updated.getResourceName() : updated.getResourceId();
+            String title;
+            String message;
+            if ("APPROVED".equalsIgnoreCase(newStatus)) {
+                title = "Booking Approved ✅";
+                message = "Your booking (" + updated.getBookingId() + ") for " + resName
+                        + " on " + updated.getDate() + " has been approved.";
+            } else if ("REJECTED".equalsIgnoreCase(newStatus)) {
+                String reason = body.get("reason");
+                title = "Booking Rejected ❌";
+                message = "Your booking (" + updated.getBookingId() + ") for " + resName
+                        + " was rejected" + (reason != null ? ": " + reason : ".");
+            } else {
+                title = "Booking Status Updated";
+                message = "Your booking (" + updated.getBookingId() + ") status changed to " + newStatus + ".";
+            }
+            Notification userNotification = new Notification(
+                "BOOKING_UPDATE", title, message, updated.getId(), updated.getUserEmail()
+            );
+            notificationRepository.save(userNotification);
+        }
+
         return ResponseEntity.ok(updated);
     }
 

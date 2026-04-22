@@ -22,9 +22,12 @@ import {
   Search,
   InboxIcon,
   Trash2,
-  Users
+  Users,
+  ArrowRight
 } from "lucide-react";
 import api from "../api/axiosConfig";
+import UserNotificationPanel from "../components/UserNotificationPanel";
+import { formatDistanceToNow } from "date-fns";
 
 // ── Static data ───────────────────────────────────────────────────────────────
 
@@ -35,12 +38,7 @@ const quickActions = [
   { icon: Bell,         label: "Notifications",   color: "pink",    bg: "rgba(236,72,153,0.1)"  },
 ];
 
-const recentActivity = [
-  { icon: CheckCircle2,  color: "text-emerald-400", text: "Room 204 booking confirmed",    time: "2 min ago"  },
-  { icon: AlertCircle,   color: "text-amber-400",   text: "Maintenance ticket #45 updated",time: "1 hr ago"   },
-  { icon: CalendarCheck, color: "text-indigo-400",  text: "Lab B reservation approved",    time: "3 hrs ago"  },
-  { icon: Bell,          color: "text-pink-400",    text: "Reminder: Meeting at 3 PM",     time: "5 hrs ago"  },
-];
+// Recent activity is now fetched dynamically
 
 const stats = [
   { label: "Active Bookings", value: "3",  icon: CalendarCheck, color: "indigo"  },
@@ -639,6 +637,8 @@ export default function UserDashboard() {
   const [activeView,  setActiveView] = useState("dashboard"); // "dashboard" | "tickets" | "bookings"
   const [ticketCount, setTicketCount]= useState(0);
   const [bookingCount, setBookingCount] = useState(0);
+  const [activity,    setActivity]    = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
   const recentActivityRef = useRef(null);
 
   // Load ticket count for the sidebar badge
@@ -666,6 +666,21 @@ export default function UserDashboard() {
       setBookingCount(bookings.length);
     } catch (err) {
       console.error("Failed to load booking count:", err);
+    }
+  };
+
+  const loadActivity = async () => {
+    try {
+      const storedUser = sessionStorage.getItem("user");
+      if (!storedUser) return;
+      const user = JSON.parse(storedUser);
+      setLoadingActivity(true);
+      const response = await api.get(`/api/notifications/user/${encodeURIComponent(user.email)}`);
+      setActivity((response.data || []).slice(0, 5));
+    } catch (err) {
+      console.error("Failed to load activity:", err);
+    } finally {
+      setLoadingActivity(false);
     }
   };
 
@@ -716,8 +731,9 @@ export default function UserDashboard() {
   
     loadTicketCount();
     loadBookingCount();
-    window.addEventListener("ticket-submitted", loadTicketCount);
-    window.addEventListener("booking-submitted", loadBookingCount);
+    loadActivity();
+    window.addEventListener("ticket-submitted", () => { loadTicketCount(); loadActivity(); });
+    window.addEventListener("booking-submitted", () => { loadBookingCount(); loadActivity(); });
     return () => {
       window.removeEventListener("ticket-submitted", loadTicketCount);
       window.removeEventListener("booking-submitted", loadBookingCount);
@@ -877,10 +893,7 @@ export default function UserDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-slate-400 transition-all hover:bg-white/10 hover:text-white">
-              <Bell size={20} />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white shadow-lg">5</span>
-            </button>
+            <UserNotificationPanel onNavigate={(view) => setActiveView(view)} />
           </div>
         </header>
 
@@ -943,23 +956,62 @@ export default function UserDashboard() {
               <section className="rounded-3xl border border-white/5 bg-slate-900/40 p-8 backdrop-blur-xl">
                 <div className="mb-8 flex items-center justify-between">
                   <h2 className="text-xl font-bold text-white">Recent Activity</h2>
-                  <button className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors">View all</button>
+                  <button 
+                    onClick={loadActivity}
+                    className="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
+                  >
+                    Refresh
+                  </button>
                 </div>
-                <ul className="space-y-6">
-                  {recentActivity.map(({ icon: Icon, color, text, time }, i) => (
-                    <li key={i} className="flex items-start gap-4">
-                      <div className={`mt-1 flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 ${color}`}>
-                        <Icon size={16} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-slate-300">{text}</div>
-                        <div className="mt-1 flex items-center gap-1 text-[10px] font-medium text-slate-500">
-                          <Clock size={10} /> {time}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                {loadingActivity ? (
+                  <div className="flex items-center justify-center py-10 text-slate-500 text-sm italic">Loading activity...</div>
+                ) : activity.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 gap-3 opacity-40">
+                    <InboxIcon size={32} />
+                    <p className="text-sm font-medium">No recent activity</p>
+                  </div>
+                ) : (
+                  <ul className="space-y-6">
+                    {activity.map((n, i) => {
+                      const isTicket = n.type === "TICKET_UPDATE";
+                      const isBooking = n.type === "BOOKING_UPDATE";
+                      const Icon = isTicket ? Ticket : isBooking ? CalendarCheck : Bell;
+                      const colorClass = isTicket ? "text-amber-400" : isBooking ? "text-emerald-400" : "text-indigo-400";
+                      const bgClass = isTicket ? "bg-amber-400/10" : isBooking ? "bg-emerald-400/10" : "bg-indigo-400/10";
+                      
+                      return (
+                        <li key={n.id} className="group flex items-start gap-4">
+                          <div className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 ${bgClass} ${colorClass}`}>
+                            <Icon size={18} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className={`text-[10px] font-black uppercase tracking-widest ${colorClass}`}>
+                                {isTicket ? "Ticket" : isBooking ? "Booking" : "Alert"}
+                              </span>
+                              <span className="h-1 w-1 rounded-full bg-slate-700" />
+                              <div className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
+                                <Clock size={10} /> {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                              </div>
+                            </div>
+                            <div className="text-sm font-bold text-slate-200 group-hover:text-white transition-colors">{n.title}</div>
+                            <div className="text-xs text-slate-500 line-clamp-1">{n.message}</div>
+                          </div>
+                          
+                          {(isTicket || isBooking) && (
+                            <button
+                              onClick={() => setActiveView(isTicket ? "tickets" : "bookings")}
+                              className="self-center flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 translate-x-2 transition-all hover:bg-indigo-600 hover:text-white"
+                              title="View Details"
+                            >
+                              <ArrowRight size={14} />
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </section>
             </div>
 
