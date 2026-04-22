@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
 import {
   LayoutDashboard,
   Users as UsersIcon,
@@ -27,6 +28,7 @@ import {
   InboxIcon,
   ChevronDown,
 } from "lucide-react";
+import NotificationPanel from "../components/NotificationPanel";
 import ResourceModal from "./Resources/ResourceModal";
 import api from "../api/axiosConfig";
 
@@ -121,16 +123,13 @@ export default function AdminDashboard() {
             <p className="mt-2 text-slate-400 font-medium">Manage your campus operations and data.</p>
           </div>
           <div className="flex items-center gap-4">
-            <button className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-slate-400 transition-all hover:bg-white/10">
-              <Bell size={20} />
-              <span className="absolute top-3 right-3 h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]"></span>
-            </button>
+            <NotificationPanel onNavigate={(tab) => setActiveTab(tab)} />
           </div>
         </header>
 
         {/* Dynamic Section Rendering */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {activeTab === "overview"  && <OverviewSection />}
+          {activeTab === "overview"  && <OverviewSection onNavigate={(tab) => setActiveTab(tab)} />}
           {activeTab === "users"     && <UserManagementSection />}
           {activeTab === "bookings"  && <BookingManagementSection />}
           {activeTab === "resources" && <ResourceManagementSection />}
@@ -143,13 +142,58 @@ export default function AdminDashboard() {
 
 // ── Sub-sections ───────────────────────────────────────────────
 
-function OverviewSection() {
+function OverviewSection({ onNavigate }) {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchRecentNotifications = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get("/api/notifications");
+        setNotifications((response.data || []).slice(0, 5));
+      } catch (err) {
+        console.error("Failed to fetch recent notifications:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecentNotifications();
+  }, []);
+
   const stats = [
     { label: "Total Users", value: "1,284", icon: UsersIcon, color: "text-blue-400", bg: "bg-blue-400/10" },
     { label: "Pending Bookings", value: "24", icon: CalendarCheck, color: "text-amber-400", bg: "bg-amber-400/10" },
     { label: "Active Resources", value: "112", icon: Building2, color: "text-emerald-400", bg: "bg-emerald-400/10" },
     { label: "Maintenance Tasks", value: "8", icon: Settings, color: "text-purple-400", bg: "bg-purple-400/10" },
   ];
+
+  const getTab = (type) => {
+    switch (type) {
+      case "TICKET":       return "tickets";
+      case "REGISTRATION": return "users";
+      case "BOOKING":      return "bookings";
+      default:             return "overview";
+    }
+  };
+
+  const getIcon = (type) => {
+    switch (type) {
+      case "TICKET":       return <Ticket size={18} />;
+      case "REGISTRATION": return <UsersIcon size={18} />;
+      case "BOOKING":      return <CalendarCheck size={18} />;
+      default:             return <Clock size={18} />;
+    }
+  };
+
+  const getTypeStyle = (type) => {
+    switch (type) {
+      case "TICKET":       return { label: "Ticket",   cls: "text-amber-400 bg-amber-400/10 border-amber-400/20" };
+      case "REGISTRATION": return { label: "New User", cls: "text-blue-400 bg-blue-400/10 border-blue-400/20" };
+      case "BOOKING":      return { label: "Booking",  cls: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" };
+      default:             return { label: type,       cls: "text-indigo-400 bg-indigo-400/10 border-indigo-400/20" };
+    }
+  };
 
   return (
     <div className="space-y-10">
@@ -171,23 +215,52 @@ function OverviewSection() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 rounded-[32px] border border-white/5 bg-slate-900/40 p-8">
-          <div className="mb-8 flex items-center justify-between">
+          <div className="mb-6 flex items-center justify-between">
             <h3 className="text-xl font-bold">Recent Activity</h3>
-            <button className="text-sm font-bold text-indigo-400">View History</button>
+            <span className="text-xs text-slate-500 font-medium">Last 5 events</span>
           </div>
-          <div className="space-y-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex items-center gap-4 rounded-2xl bg-white/5 p-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400">
-                  <Clock size={18} />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold">New Resource Added</div>
-                  <div className="text-xs text-slate-500">Auditorium C was registered by Admin</div>
-                </div>
-                <div className="text-xs text-slate-600 font-medium">2 hours ago</div>
-              </div>
-            ))}
+          <div className="space-y-3">
+            {loading ? (
+              <div className="text-center py-10 text-slate-500">Loading activity...</div>
+            ) : notifications.length === 0 ? (
+              <div className="text-center py-10 text-slate-500">No recent activity</div>
+            ) : (
+              notifications.map((n) => {
+                const typeStyle = getTypeStyle(n.type);
+                return (
+                  <div key={n.id} className="flex items-center gap-4 rounded-2xl bg-white/5 px-5 py-4 border border-white/5 hover:border-white/10 transition-all group">
+                    {/* Icon */}
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                      n.type === "TICKET" ? "bg-amber-400/10 text-amber-400" :
+                      n.type === "REGISTRATION" ? "bg-blue-400/10 text-blue-400" :
+                      "bg-emerald-400/10 text-emerald-400"
+                    }`}>
+                      {getIcon(n.type)}
+                    </div>
+                    {/* Text */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${typeStyle.cls}`}>
+                          {typeStyle.label}
+                        </span>
+                        <span className="text-[10px] text-slate-600 font-medium">
+                          {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                        </span>
+                      </div>
+                      <div className="text-sm font-bold text-white">{n.title}</div>
+                      <div className="text-xs text-slate-500 line-clamp-1 mt-0.5">{n.message}</div>
+                    </div>
+                    {/* View button */}
+                    <button
+                      onClick={() => onNavigate && onNavigate(getTab(n.type))}
+                      className="shrink-0 flex items-center gap-1.5 rounded-xl bg-indigo-600/20 border border-indigo-500/30 px-3 py-2 text-[11px] font-bold text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      View <ChevronRight size={12} />
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
         <div className="rounded-[32px] border border-white/5 bg-slate-900/40 p-8 text-center">
