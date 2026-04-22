@@ -37,6 +37,7 @@ const Navbar = () => {
             <Link to="/" className="text-sm font-medium text-slate-300 transition-colors hover:text-white">Home</Link>
             <Link to="/resources" className="text-sm font-medium text-slate-300 transition-colors hover:text-white">Resources</Link>
             <Link to="/equipment" className="text-sm font-medium text-slate-300 transition-colors hover:text-white">Equipment</Link>
+            <Link to="/tickets" className="text-sm font-medium text-slate-300 transition-colors hover:text-white">Tickets</Link>
             {user && (
               <>
                 <Link to="/user-dashboard" className="text-sm font-medium text-slate-300 transition-colors hover:text-white">My Dashboard</Link>

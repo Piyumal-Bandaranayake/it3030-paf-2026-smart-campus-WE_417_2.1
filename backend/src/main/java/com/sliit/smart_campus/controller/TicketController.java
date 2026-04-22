@@ -170,6 +170,9 @@ public class TicketController {
                             notifTitle = "Ticket Rejected ❌";
                             notifMessage = "Your ticket (" + updatedTicket.getTicketId() + ") was rejected"
                                     + (rejectionReason != null ? ": " + rejectionReason : ".");
+                        } else if ("Closed".equals(status)) {
+                            notifTitle = "Ticket Closed 🔒";
+                            notifMessage = "Your ticket (" + updatedTicket.getTicketId() + ") has been officially closed and archived.";
                         } else if ("In Progress".equals(status)) {
                             notifTitle = "Ticket In Progress 🔧";
                             notifMessage = "Your ticket (" + updatedTicket.getTicketId() + ") is now being worked on.";
