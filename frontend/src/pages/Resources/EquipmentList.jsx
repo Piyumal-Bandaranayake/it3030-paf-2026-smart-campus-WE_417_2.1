@@ -125,7 +125,7 @@ const EquipmentList = () => {
             </div>
           ) : (
             equipmentList.map((item) => (
-              <div key={item.id || item.resourceCode} className="group relative flex flex-col overflow-hidden rounded-[32px] border border-white/5 bg-slate-900/40 backdrop-blur-xl transition-all hover:border-indigo-500/30 hover:bg-slate-900/60">
+              <div key={item.id || item.resourceCode} className="group relative flex flex-col overflow-hidden rounded-[32px] border border-white/5 bg-slate-900/40 backdrop-blur-xl transition-all duration-300 hover:border-indigo-500/50 hover:bg-slate-900/60 hover:shadow-[0_0_30px_rgba(99,102,241,0.1)]">
                 <div className="p-8">
                   <div className="mb-6 flex items-start justify-between">
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20 transition-colors">

@@ -207,7 +207,7 @@ export default function ResourceList() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-white/5 bg-white/5">
+                <tr className="border-b border-white/5 bg-slate-800/50">
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Resource</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Type</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Location</th>
@@ -241,7 +241,7 @@ export default function ResourceList() {
                   </tr>
                 ) : (
                   current.map((r) => (
-                    <tr key={r.id || r.resourceCode} className="group transition-colors hover:bg-white/[0.02]">
+                    <tr key={r.id || r.resourceCode} className="group transition-all duration-300 hover:shadow-[inset_0_0_0_1px_rgba(99,102,241,0.2)]">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 font-bold">

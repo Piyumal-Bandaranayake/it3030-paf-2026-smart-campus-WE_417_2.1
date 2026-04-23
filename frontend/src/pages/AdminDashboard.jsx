@@ -388,7 +388,7 @@ function UserManagementSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="bg-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500">
+            <tr className="bg-slate-800/50 text-[10px] font-black uppercase tracking-widest text-slate-500">
               <th className="px-8 py-5">User</th>
               <th className="px-8 py-5">Role</th>
               <th className="px-8 py-5">Status</th>
