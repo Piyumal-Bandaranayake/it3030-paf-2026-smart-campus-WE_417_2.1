@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Calendar, Clock, FileText, Users } from "lucide-react";
+import { X, Calendar, Clock, FileText, Users, QrCode, CheckCircle2 } from "lucide-react";
 import api from "../../api/axiosConfig";
 
 export default function BookingModal({ open, onClose, resource }) {
@@ -10,6 +10,8 @@ export default function BookingModal({ open, onClose, resource }) {
     attendance: "",
     purpose: "",
   });
+  const [successData, setSuccessData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // Since the parent handles conditional rendering based on selectedResource,
   // we use a combined check for 'open' or just assume it's open if rendered.
@@ -27,9 +29,11 @@ export default function BookingModal({ open, onClose, resource }) {
     }
 
     try {
+      setLoading(true);
       const storedUser = sessionStorage.getItem("user");
       if (!storedUser) {
         alert("User not logged in.");
+        setLoading(false);
         return;
       }
       const user = JSON.parse(storedUser);
@@ -42,17 +46,55 @@ export default function BookingModal({ open, onClose, resource }) {
         attendance: parseInt(form.attendance)
       };
 
-      await api.post("/api/bookings", bookingData);
-      alert(`Booking submitted for ${resource?.name}`);
-      onClose();
+      const response = await api.post("/api/bookings", bookingData);
+      setSuccessData(response.data);
       // Optional: dispatch event to refresh dashboard
       window.dispatchEvent(new Event("booking-submitted"));
     } catch (err) {
       console.error("Failed to submit booking:", err);
       const errorMsg = err.response?.data?.message || err.message || "Please try again.";
       alert(`Failed to submit booking: ${errorMsg}`);
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (successData) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+        <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
+        <div className="relative w-full max-w-sm overflow-hidden rounded-[32px] border border-white/10 bg-slate-900 p-8 shadow-2xl text-center animate-in zoom-in-95 duration-300">
+          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400 mx-auto">
+            <CheckCircle2 size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Booking Confirmed!</h2>
+          <p className="text-sm text-slate-400 mb-8 px-4">
+            Your request for <span className="text-white font-bold">{resource?.name}</span> has been submitted successfully.
+          </p>
+          
+          <div className="bg-white p-4 rounded-2xl inline-block mb-6 shadow-2xl shadow-indigo-500/20">
+            <img 
+              src={`data:image/png;base64,${successData.qrCode}`} 
+              alt="QR Code" 
+              className="w-48 h-48 mx-auto rounded-lg"
+            />
+          </div>
+          
+          <div className="mb-8">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Booking ID</p>
+            <p className="text-sm text-indigo-400 font-mono font-bold">{successData.bookingId}</p>
+          </div>
+          
+          <button 
+            onClick={onClose}
+            className="w-full rounded-xl bg-indigo-600 py-4 text-sm font-black uppercase tracking-widest text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
@@ -151,9 +193,10 @@ export default function BookingModal({ open, onClose, resource }) {
           </button>
           <button 
             onClick={handleSubmit}
-            className="flex-1 rounded-2xl bg-indigo-600 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)]"
+            disabled={loading}
+            className="flex-1 rounded-2xl bg-indigo-600 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:opacity-50"
           >
-            Confirm Booking
+            {loading ? "Confirming..." : "Confirm Booking"}
           </button>
         </div>
       </div>
