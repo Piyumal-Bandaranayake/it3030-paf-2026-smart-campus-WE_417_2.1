@@ -11,7 +11,7 @@ const formatTime = (timeStr) => {
   if (!timeStr) return "N/A";
   // Handle already formatted strings like "8.00AM"
   if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
-  
+
   const [hours, minutes] = timeStr.split(":");
   let h = parseInt(hours, 10);
   const m = minutes || "00";
@@ -139,17 +139,16 @@ export default function ResourceList() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          
+
           <div className="flex gap-2 lg:col-span-2">
             {["", "ACTIVE", "OUT_OF_SERVICE", "MAINTENANCE"].map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`flex-1 rounded-xl border px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${
-                  statusFilter === s 
-                    ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400" 
+                className={`flex-1 rounded-xl border px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${statusFilter === s
+                    ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
                     : "border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
-                }`}
+                  }`}
               >
                 {s || "All Status"}
               </button>
@@ -264,7 +263,7 @@ export default function ResourceList() {
         {/* Pagination Section */}
         {totalPages > 1 && (
           <div className="mt-8 flex items-center justify-center gap-2">
-            <button 
+            <button
               disabled={page === 1}
               onClick={() => setPage(p => p - 1)}
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-slate-900/50 text-slate-400 transition-all hover:bg-white/5 disabled:opacity-20"
@@ -275,16 +274,15 @@ export default function ResourceList() {
               <button
                 key={i}
                 onClick={() => setPage(i + 1)}
-                className={`h-10 w-10 rounded-xl text-sm font-bold transition-all ${
-                  page === i + 1 
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" 
+                className={`h-10 w-10 rounded-xl text-sm font-bold transition-all ${page === i + 1
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
                     : "border border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
-                }`}
+                  }`}
               >
                 {i + 1}
               </button>
             ))}
-            <button 
+            <button
               disabled={page === totalPages}
               onClick={() => setPage(p => p + 1)}
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-slate-900/50 text-slate-400 transition-all hover:bg-white/5 disabled:opacity-20"
