@@ -146,8 +146,8 @@ export default function ResourceList() {
                 key={s}
                 onClick={() => setStatusFilter(s)}
                 className={`flex-1 rounded-xl border px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${statusFilter === s
-                    ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
-                    : "border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
+                  ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
+                  : "border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
                   }`}
               >
                 {s || "All Status"}
@@ -275,8 +275,8 @@ export default function ResourceList() {
                 key={i}
                 onClick={() => setPage(i + 1)}
                 className={`h-10 w-10 rounded-xl text-sm font-bold transition-all ${page === i + 1
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                    : "border border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                  : "border border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
                   }`}
               >
                 {i + 1}

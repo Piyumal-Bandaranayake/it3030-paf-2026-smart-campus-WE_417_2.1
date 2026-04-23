@@ -71,21 +71,21 @@ export default function BookingModal({ open, onClose, resource }) {
           <p className="text-sm text-slate-400 mb-8 px-4">
             Your request for <span className="text-white font-bold">{resource?.name}</span> has been submitted successfully.
           </p>
-          
+
           <div className="bg-white p-4 rounded-2xl inline-block mb-6 shadow-2xl shadow-indigo-500/20">
-            <img 
-              src={`data:image/png;base64,${successData.qrCode}`} 
-              alt="QR Code" 
+            <img
+              src={`data:image/png;base64,${successData.qrCode}`}
+              alt="QR Code"
               className="w-48 h-48 mx-auto rounded-lg"
             />
           </div>
-          
+
           <div className="mb-8">
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Booking ID</p>
             <p className="text-sm text-indigo-400 font-mono font-bold">{successData.bookingId}</p>
           </div>
-          
-          <button 
+
+          <button
             onClick={onClose}
             className="w-full rounded-xl bg-indigo-600 py-4 text-sm font-black uppercase tracking-widest text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
           >
@@ -99,9 +99,9 @@ export default function BookingModal({ open, onClose, resource }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
       {/* Overlay */}
-      <div 
-        className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity" 
-        onClick={onClose} 
+      <div
+        className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
       />
 
       {/* Modal */}
@@ -111,7 +111,7 @@ export default function BookingModal({ open, onClose, resource }) {
             <h2 className="text-2xl font-bold text-white">Book Resource</h2>
             <p className="mt-1 text-sm text-indigo-400 font-medium">{resource?.name}</p>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="rounded-full p-2 text-slate-500 transition-colors hover:bg-white/5 hover:text-white"
           >
@@ -124,11 +124,11 @@ export default function BookingModal({ open, onClose, resource }) {
             <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
               <Calendar size={14} /> Date
             </label>
-            <input 
+            <input
               type="date"
-              name="date" 
+              name="date"
               className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-              onChange={handleChange} 
+              onChange={handleChange}
             />
           </div>
 
@@ -137,22 +137,22 @@ export default function BookingModal({ open, onClose, resource }) {
               <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
                 <Clock size={14} /> Start Time
               </label>
-              <input 
+              <input
                 type="time"
-                name="startTime" 
+                name="startTime"
                 className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                onChange={handleChange} 
+                onChange={handleChange}
               />
             </div>
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
                 <Clock size={14} /> End Time
               </label>
-              <input 
+              <input
                 type="time"
-                name="endTime" 
+                name="endTime"
                 className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                onChange={handleChange} 
+                onChange={handleChange}
               />
             </div>
           </div>
@@ -161,12 +161,12 @@ export default function BookingModal({ open, onClose, resource }) {
             <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
               <Users size={14} /> Number of Attendance
             </label>
-            <input 
+            <input
               type="number"
-              name="attendance" 
+              name="attendance"
               placeholder="e.g. 50"
               className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              onChange={handleChange} 
+              onChange={handleChange}
             />
           </div>
 
@@ -174,24 +174,24 @@ export default function BookingModal({ open, onClose, resource }) {
             <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
               <FileText size={14} /> Purpose
             </label>
-            <textarea 
-              name="purpose" 
-              placeholder="e.g. Research Project Presentation" 
+            <textarea
+              name="purpose"
+              placeholder="e.g. Research Project Presentation"
               rows="3"
               className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-              onChange={handleChange} 
+              onChange={handleChange}
             />
           </div>
         </div>
 
         <div className="mt-10 flex gap-4">
-          <button 
+          <button
             onClick={onClose}
             className="flex-1 rounded-2xl border border-white/5 bg-white/5 py-4 text-sm font-bold text-slate-400 transition-all hover:bg-white/10 hover:text-white"
           >
             Cancel
           </button>
-          <button 
+          <button
             onClick={handleSubmit}
             disabled={loading}
             className="flex-1 rounded-2xl bg-indigo-600 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-500 hover:shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:opacity-50"

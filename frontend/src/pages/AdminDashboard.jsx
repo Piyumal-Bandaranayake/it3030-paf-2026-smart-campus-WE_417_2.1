@@ -82,8 +82,8 @@ export default function AdminDashboard() {
               key={id}
               onClick={() => setActiveTab(id)}
               className={`group flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-sm font-bold transition-all ${activeTab === id
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                  : "text-slate-400 hover:bg-white/5 hover:text-white"
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                : "text-slate-400 hover:bg-white/5 hover:text-white"
                 }`}
             >
               <Icon size={20} className={activeTab === id ? "text-white" : "group-hover:text-indigo-400 transition-colors"} />
@@ -231,8 +231,8 @@ function OverviewSection({ onNavigate }) {
                   <div key={n.id} className="flex items-center gap-4 rounded-2xl bg-white/5 px-5 py-4 border border-white/5 hover:border-white/10 transition-all group">
                     {/* Icon */}
                     <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${n.type === "TICKET" ? "bg-amber-400/10 text-amber-400" :
-                        n.type === "REGISTRATION" ? "bg-blue-400/10 text-blue-400" :
-                          "bg-emerald-400/10 text-emerald-400"
+                      n.type === "REGISTRATION" ? "bg-blue-400/10 text-blue-400" :
+                        "bg-emerald-400/10 text-emerald-400"
                       }`}>
                       {getIcon(n.type)}
                     </div>
@@ -369,8 +369,8 @@ function UserManagementSection() {
                 key={r}
                 onClick={() => setRoleFilter(r)}
                 className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${roleFilter === r
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                    : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5"
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                  : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5"
                   }`}
               >
                 {r}
@@ -657,8 +657,8 @@ function BookingManagementSection() {
                   key={s}
                   onClick={() => setStatusFilter(s)}
                   className={`rounded-xl border px-4 py-2 text-xs font-bold transition-all ${statusFilter === s
-                      ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
-                      : "border-white/5 bg-slate-900/50 text-slate-400 hover:text-white"
+                    ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
+                    : "border-white/5 bg-slate-900/50 text-slate-400 hover:text-white"
                     }`}
                 >
                   {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
@@ -1004,8 +1004,8 @@ function ResourceManagementSection() {
               key={t}
               onClick={() => setResourceFilter(t)}
               className={`rounded-xl border px-5 py-2 text-xs font-bold transition-all ${resourceFilter === t
-                  ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
-                  : "border-white/5 bg-slate-900/50 text-slate-400 hover:text-white"
+                ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
+                : "border-white/5 bg-slate-900/50 text-slate-400 hover:text-white"
                 }`}
             >
               {t}

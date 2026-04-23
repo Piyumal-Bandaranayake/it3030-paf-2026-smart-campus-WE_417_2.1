@@ -149,11 +149,10 @@ export default function UserResourceList() {
                   {/* STATUS */}
                   <td>
                     <span
-                      className={`status ${
-                        r.status === "ACTIVE"
-                          ? "active-status"
-                          : "out-status"
-                      }`}
+                      className={`status ${r.status === "ACTIVE"
+                        ? "active-status"
+                        : "out-status"
+                        }`}
                     >
                       {r.status}
                     </span>
