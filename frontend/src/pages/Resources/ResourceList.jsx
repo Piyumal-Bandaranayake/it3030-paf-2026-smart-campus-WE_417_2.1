@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, ChevronLeft, ChevronRight, Building2, MapPin, Users } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Building2, MapPin, Users, Clock } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ResourceModal from "./ResourceModal";
@@ -7,6 +7,19 @@ import BookingModal from "./BookingModal";
 import api from "../../api/axiosConfig";
 
 const PER_PAGE = 6;
+const formatTime = (timeStr) => {
+  if (!timeStr) return "N/A";
+  // Handle already formatted strings like "8.00AM"
+  if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+  
+  const [hours, minutes] = timeStr.split(":");
+  let h = parseInt(hours, 10);
+  const m = minutes || "00";
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  h = h ? h : 12;
+  return `${h}.${m}${ampm}`;
+};
 
 export default function ResourceList() {
   const [resources, setResources] = useState([]);
@@ -41,6 +54,8 @@ export default function ResourceList() {
           location: resource.location || "Not specified",
           capacity: resource.capacity ?? 0,
           status: resource.status || "ACTIVE",
+          startTime: resource.startTime || "8.00AM",
+          endTime: resource.endTime || "7.00PM",
         }));
 
         setResources(normalizedResources);
@@ -152,6 +167,7 @@ export default function ResourceList() {
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Type</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Location</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Capacity</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Availability</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Actions</th>
                 </tr>
@@ -159,19 +175,19 @@ export default function ResourceList() {
               <tbody className="divide-y divide-white/5">
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
                       Loading resources...
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-red-400">
+                    <td colSpan="7" className="px-6 py-12 text-center text-red-400">
                       {error}
                     </td>
                   </tr>
                 ) : current.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center gap-2">
                         <Building2 size={32} className="opacity-20" />
                         <span>No resources found matching your criteria</span>
@@ -205,6 +221,12 @@ export default function ResourceList() {
                         <div className="flex items-center gap-2 text-sm text-slate-300">
                           <Users size={14} className="text-slate-500" />
                           {r.capacity}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-sm text-slate-300">
+                          <Clock size={14} className="text-slate-500" />
+                          {formatTime(r.startTime)} - {formatTime(r.endTime)}
                         </div>
                       </td>
                       <td className="px-6 py-4">

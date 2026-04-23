@@ -8,6 +8,8 @@ const defaultForm = {
   capacity: "",
   status: "ACTIVE",
   description: "",
+  startTime: "08:00",
+  endTime: "19:00",
 };
 
 export default function ResourceModal({
@@ -32,6 +34,8 @@ export default function ResourceModal({
         capacity: initialData.capacity?.toString() ?? "",
         status: initialData.status ?? defaultForm.status,
         description: initialData.description ?? "",
+        startTime: initialData.startTime ?? defaultForm.startTime,
+        endTime: initialData.endTime ?? defaultForm.endTime,
       });
       return;
     }
@@ -167,6 +171,29 @@ export default function ResourceModal({
                 <option value="OUT_OF_SERVICE">Out of Service</option>
                 <option value="MAINTENANCE">Maintenance</option>
               </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">Start Time</label>
+              <input 
+                name="startTime" 
+                type="time"
+                className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                value={form.startTime}
+                onChange={handleChange} 
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">End Time</label>
+              <input 
+                name="endTime" 
+                type="time"
+                className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                value={form.endTime}
+                onChange={handleChange} 
+              />
             </div>
           </div>
 
