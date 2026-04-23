@@ -23,7 +23,9 @@ import {
   InboxIcon,
   Trash2,
   Users,
-  ArrowRight
+  ArrowRight,
+  QrCode,
+  X
 } from "lucide-react";
 import api from "../api/axiosConfig";
 import UserNotificationPanel from "../components/UserNotificationPanel";
@@ -401,6 +403,7 @@ function MyTicketsView() {
 function MyBookingsView() {
   const [bookings, setBookings] = useState([]);
   const [search, setSearch] = useState("");
+  const [selectedQR, setSelectedQR] = useState(null);
 
   const loadResources = async () => {
     try {
@@ -452,181 +455,254 @@ function MyBookingsView() {
   });
 
   return (
-    <section
-      style={{
-        borderRadius: "1.5rem",
-        border: "1px solid rgba(255,255,255,0.05)",
-        background: "rgba(15,23,42,0.4)",
-        backdropFilter: "blur(16px)",
-        padding: "2rem",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#fff" }}>My Bookings</h2>
-          <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "#64748b" }}>
-            {bookings.length} resource booking{bookings.length !== 1 ? "s" : ""}
-          </p>
+    <>
+      <section
+        style={{
+          borderRadius: "1.5rem",
+          border: "1px solid rgba(255,255,255,0.05)",
+          background: "rgba(15,23,42,0.4)",
+          backdropFilter: "blur(16px)",
+          padding: "2rem",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 800, color: "#fff" }}>My Bookings</h2>
+            <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "#64748b" }}>
+              {bookings.length} resource booking{bookings.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <button
+            onClick={loadResources}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.4rem",
+              padding: "0.45rem 0.875rem",
+              borderRadius: "0.625rem",
+              border: "1px solid rgba(255,255,255,0.07)",
+              background: "rgba(255,255,255,0.04)",
+              color: "#94a3b8", fontSize: "0.75rem", fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            <RefreshCw size={13} /> Refresh
+          </button>
         </div>
-        <button
-          onClick={loadResources}
-          style={{
-            display: "flex", alignItems: "center", gap: "0.4rem",
-            padding: "0.45rem 0.875rem",
-            borderRadius: "0.625rem",
-            border: "1px solid rgba(255,255,255,0.07)",
-            background: "rgba(255,255,255,0.04)",
-            color: "#94a3b8", fontSize: "0.75rem", fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          <RefreshCw size={13} /> Refresh
-        </button>
-      </div>
 
-      <div style={{ position: "relative", marginBottom: "1.25rem" }}>
-        <Search size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#475569" }} />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by ID, resource, or purpose…"
-          style={{
-            width: "100%", padding: "0.55rem 0.875rem 0.55rem 2.1rem",
-            borderRadius: "0.625rem", border: "1px solid rgba(255,255,255,0.07)",
-            background: "rgba(255,255,255,0.04)", color: "#e2e8f0", fontSize: "0.8rem", outline: "none",
-          }}
-        />
-      </div>
-
-      {visible.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "3rem", color: "#475569" }}>
-          <CalendarCheck size={40} style={{ marginBottom: "1rem", opacity: 0.5 }} />
-          <p>No bookings found.</p>
+        <div style={{ position: "relative", marginBottom: "1.25rem" }}>
+          <Search size={14} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: "#475569" }} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by ID, resource, or purpose…"
+            style={{
+              width: "100%", padding: "0.55rem 0.875rem 0.55rem 2.1rem",
+              borderRadius: "0.625rem", border: "1px solid rgba(255,255,255,0.07)",
+              background: "rgba(255,255,255,0.04)", color: "#e2e8f0", fontSize: "0.8rem", outline: "none",
+            }}
+          />
         </div>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {visible.map((b) => (
-            <div
-              key={b.id}
-              style={{
-                borderRadius: "1rem", border: "1px solid rgba(255,255,255,0.06)",
-                background: "rgba(255,255,255,0.03)", padding: "1.25rem",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                    <span style={{
-                      fontFamily: "monospace", fontSize: "0.7rem", fontWeight: 800,
-                      color: "#818cf8", background: "rgba(99,102,241,0.1)",
-                      padding: "0.2rem 0.5rem", borderRadius: "0.4rem"
-                    }}>
-                      {b.bookingId}
-                    </span>
-                    
-                    {/* Status Badge */}
-                    {(() => {
-                      const status = b.status || "PENDING";
-                      const cfg = BOOKING_STATUS_CONFIG[status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()] || BOOKING_STATUS_CONFIG.Pending;
-                      return (
-                        <span style={{
-                          fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
-                          padding: "0.15rem 0.5rem", borderRadius: "9999px",
-                          background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.text,
-                        }}>
-                          {status}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <h3 style={{ margin: "0.5rem 0 0.25rem", fontSize: "1rem", fontWeight: 700, color: "#fff" }}>{b.resourceName}</h3>
-                </div>
-                <span style={{ color: "#475569", fontSize: "0.7rem", fontWeight: 700 }}>
-                  {b.status?.toUpperCase() === "REJECTED" ? "Closed" : "Active"}
-                </span>
-              </div>
-              
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "1rem", fontSize: "0.75rem", color: "#94a3b8" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <CalendarCheck size={14} className="text-indigo-400" />
-                  {b.date}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <Clock size={14} className="text-indigo-400" />
-                  {b.startTime} - {b.endTime}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <Users size={14} className="text-indigo-400" />
-                  {b.attendance} People
-                </div>
-              </div>
-              
-              <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: "0.75rem", background: "rgba(255,255,255,0.02)", fontSize: "0.8rem", color: "#cbd5e1" }}>
-                <strong style={{ display: "block", fontSize: "0.65rem", textTransform: "uppercase", color: "#64748b", marginBottom: "0.25rem" }}>Purpose</strong>
-                {b.purpose}
-              </div>
 
-              <button
-                onClick={() => cancelBooking(b.id, b.status)}
+        {visible.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "3rem", color: "#475569" }}>
+            <CalendarCheck size={40} style={{ marginBottom: "1rem", opacity: 0.5 }} />
+            <p>No bookings found.</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            {visible.map((b) => (
+              <div
+                key={b.id}
                 style={{
-                  marginTop: "1.25rem",
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "0.5rem",
-                  padding: "0.75rem",
-                  borderRadius: "0.75rem",
-                  border: (b.status?.toUpperCase() === "REJECTED" || b.status?.toUpperCase() === "CANCELLED") ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(239,68,68,0.2)",
-                  background: (b.status?.toUpperCase() === "REJECTED" || b.status?.toUpperCase() === "CANCELLED") ? "rgba(255,255,255,0.03)" : "rgba(239,68,68,0.05)",
-                  color: (b.status?.toUpperCase() === "REJECTED" || b.status?.toUpperCase() === "CANCELLED") ? "#94a3b8" : "#f87171",
-                  fontSize: "0.75rem",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  const s = b.status?.toUpperCase();
-                  const isInactive = s === "REJECTED" || s === "CANCELLED";
-                  e.currentTarget.style.background = isInactive ? "rgba(255,255,255,0.06)" : "rgba(239,68,68,0.1)";
-                  e.currentTarget.style.borderColor = isInactive ? "rgba(255,255,255,0.15)" : "rgba(239,68,68,0.4)";
-                }}
-                onMouseLeave={(e) => {
-                  const s = b.status?.toUpperCase();
-                  const isInactive = s === "REJECTED" || s === "CANCELLED";
-                  e.currentTarget.style.background = isInactive ? "rgba(255,255,255,0.03)" : "rgba(239,68,68,0.05)";
-                  e.currentTarget.style.borderColor = isInactive ? "rgba(255,255,255,0.08)" : "rgba(239,68,68,0.2)";
+                  borderRadius: "1rem", border: "1px solid rgba(255,255,255,0.06)",
+                  background: "rgba(255,255,255,0.03)", padding: "1.25rem",
                 }}
               >
-                <Trash2 size={14} /> 
-                {(() => {
-                  const s = b.status?.toUpperCase();
-                  if (s === "REJECTED" || s === "CANCELLED") return "Remove from History";
-                  return "Cancel Booking";
-                })()}
-              </button>
-
-              {b.status?.toUpperCase() === "REJECTED" && (b.rejectionReason || b.reason) && (
-                <div style={{
-                  marginTop: "1rem",
-                  padding: "1rem",
-                  borderRadius: "1rem",
-                  background: "rgba(239,68,68,0.05)",
-                  border: "1px solid rgba(239,68,68,0.15)",
-                }}>
-                  <div style={{ fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", color: "#f87171", marginBottom: "0.25rem" }}>
-                    Rejection Reason
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <span style={{
+                        fontFamily: "monospace", fontSize: "0.7rem", fontWeight: 800,
+                        color: "#818cf8", background: "rgba(99,102,241,0.1)",
+                        padding: "0.2rem 0.5rem", borderRadius: "0.4rem"
+                      }}>
+                        {b.bookingId}
+                      </span>
+                      
+                      {/* Status Badge */}
+                      {(() => {
+                        const status = b.status || "PENDING";
+                        const cfg = BOOKING_STATUS_CONFIG[status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()] || BOOKING_STATUS_CONFIG.Pending;
+                        return (
+                          <span style={{
+                            fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+                            padding: "0.15rem 0.5rem", borderRadius: "9999px",
+                            background: cfg.bg, border: `1px solid ${cfg.border}`, color: cfg.text,
+                          }}>
+                            {status}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    <h3 style={{ margin: "0.5rem 0 0.25rem", fontSize: "1rem", fontWeight: 700, color: "#fff" }}>{b.resourceName}</h3>
                   </div>
-                  <p style={{ margin: 0, fontSize: "0.75rem", color: "#fca5a5" }}>
-                    {b.rejectionReason || b.reason}
-                  </p>
+                  <span style={{ color: "#475569", fontSize: "0.7rem", fontWeight: 700 }}>
+                    {b.status?.toUpperCase() === "REJECTED" ? "Closed" : "Active"}
+                  </span>
                 </div>
-              )}
-            </div>
-          ))}
+                
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "1rem", fontSize: "0.75rem", color: "#94a3b8" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <CalendarCheck size={14} className="text-indigo-400" />
+                    {b.date}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <Clock size={14} className="text-indigo-400" />
+                    {b.startTime} - {b.endTime}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <Users size={14} className="text-indigo-400" />
+                    {b.attendance} People
+                  </div>
+                </div>
+                
+                <div style={{ marginTop: "1rem", padding: "0.75rem", borderRadius: "0.75rem", background: "rgba(255,255,255,0.02)", fontSize: "0.8rem", color: "#cbd5e1" }}>
+                  <strong style={{ display: "block", fontSize: "0.65rem", textTransform: "uppercase", color: "#64748b", marginBottom: "0.25rem" }}>Purpose</strong>
+                  {b.purpose}
+                </div>
+
+                <button
+                  onClick={() => cancelBooking(b.id, b.status)}
+                  style={{
+                    marginTop: "1.25rem",
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    padding: "0.75rem",
+                    borderRadius: "0.75rem",
+                    border: (b.status?.toUpperCase() === "REJECTED" || b.status?.toUpperCase() === "CANCELLED") ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(239,68,68,0.2)",
+                    background: (b.status?.toUpperCase() === "REJECTED" || b.status?.toUpperCase() === "CANCELLED") ? "rgba(255,255,255,0.03)" : "rgba(239,68,68,0.05)",
+                    color: (b.status?.toUpperCase() === "REJECTED" || b.status?.toUpperCase() === "CANCELLED") ? "#94a3b8" : "#f87171",
+                    fontSize: "0.75rem",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    const s = b.status?.toUpperCase();
+                    const isInactive = s === "REJECTED" || s === "CANCELLED";
+                    e.currentTarget.style.background = isInactive ? "rgba(255,255,255,0.06)" : "rgba(239,68,68,0.1)";
+                    e.currentTarget.style.borderColor = isInactive ? "rgba(255,255,255,0.15)" : "rgba(239,68,68,0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    const s = b.status?.toUpperCase();
+                    const isInactive = s === "REJECTED" || s === "CANCELLED";
+                    e.currentTarget.style.background = isInactive ? "rgba(255,255,255,0.03)" : "rgba(239,68,68,0.05)";
+                    e.currentTarget.style.borderColor = isInactive ? "rgba(255,255,255,0.08)" : "rgba(239,68,68,0.2)";
+                  }}
+                >
+                  <Trash2 size={14} /> 
+                  {(() => {
+                    const s = b.status?.toUpperCase();
+                    if (s === "REJECTED" || s === "CANCELLED") return "Remove from History";
+                    return "Cancel Booking";
+                  })()}
+                </button>
+
+                {b.qrCode && b.status?.toUpperCase() !== "REJECTED" && b.status?.toUpperCase() !== "CANCELLED" && (
+                  <button
+                    onClick={() => setSelectedQR(b)}
+                    style={{
+                      marginTop: "0.75rem",
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "0.5rem",
+                      padding: "0.75rem",
+                      borderRadius: "0.75rem",
+                      border: "1px solid rgba(99,102,241,0.2)",
+                      background: "rgba(99,102,241,0.05)",
+                      color: "#818cf8",
+                      fontSize: "0.75rem",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(99,102,241,0.1)";
+                      e.currentTarget.style.borderColor = "rgba(99,102,241,0.4)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(99,102,241,0.05)";
+                      e.currentTarget.style.borderColor = "rgba(99,102,241,0.2)";
+                    }}
+                  >
+                    <QrCode size={14} /> View QR Code
+                  </button>
+                )}
+
+                {b.status?.toUpperCase() === "REJECTED" && (b.rejectionReason || b.reason) && (
+                  <div style={{
+                    marginTop: "1rem",
+                    padding: "1rem",
+                    borderRadius: "1rem",
+                    background: "rgba(239,68,68,0.05)",
+                    border: "1px solid rgba(239,68,68,0.15)",
+                  }}>
+                    <div style={{ fontSize: "0.65rem", fontWeight: 800, textTransform: "uppercase", color: "#f87171", marginBottom: "0.25rem" }}>
+                      Rejection Reason
+                    </div>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "#fca5a5" }}>
+                      {b.rejectionReason || b.reason}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+      <QRCodeModal booking={selectedQR} onClose={() => setSelectedQR(null)} />
+    </>
+  );
+}
+
+function QRCodeModal({ booking, onClose }) {
+  if (!booking) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+      <div className="w-full max-w-sm rounded-[32px] border border-white/10 bg-slate-900 p-8 shadow-2xl animate-in zoom-in-95 duration-200 text-center">
+        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 mx-auto">
+          <QrCode size={28} />
         </div>
-      )}
-    </section>
+        <h3 className="text-xl font-bold text-white mb-1">Booking Confirmation</h3>
+        <p className="text-sm text-slate-400 mb-6 font-medium">
+          {booking.resourceName} <br />
+          <span className="text-xs text-indigo-400 font-mono">{booking.bookingId}</span>
+        </p>
+        
+        <div className="bg-white p-4 rounded-2xl inline-block mb-6 shadow-xl shadow-indigo-500/10">
+          <img 
+            src={`data:image/png;base64,${booking.qrCode}`} 
+            alt="QR Code" 
+            className="w-48 h-48 mx-auto rounded-lg"
+          />
+        </div>
+
+        <div className="text-xs text-slate-500 mb-8 px-4 leading-relaxed">
+          Present this QR code at the resource location for verification.
+        </div>
+        
+        <button
+          onClick={onClose}
+          className="w-full rounded-xl bg-indigo-600 py-3.5 text-sm font-black uppercase tracking-widest text-white hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
+        >
+          Close
+        </button>
+      </div>
+    </div>
   );
 }
 
