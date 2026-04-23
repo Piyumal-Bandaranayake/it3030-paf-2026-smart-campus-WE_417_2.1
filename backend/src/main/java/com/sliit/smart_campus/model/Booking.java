@@ -20,13 +20,14 @@ public class Booking {
     private Integer attendance;
     private String status;
     private String rejectionReason;
+    private String qrCode;
     private LocalDateTime createdAt;
 
     public Booking() {}
 
     public Booking(String id, String bookingId, String userEmail, String resourceId, String resourceName, 
                    String date, String startTime, String endTime, String purpose, 
-                   Integer attendance, String status, String rejectionReason, LocalDateTime createdAt) {
+                   Integer attendance, String status, String rejectionReason, String qrCode, LocalDateTime createdAt) {
         this.id = id;
         this.bookingId = bookingId;
         this.userEmail = userEmail;
@@ -39,6 +40,7 @@ public class Booking {
         this.attendance = attendance;
         this.status = status;
         this.rejectionReason = rejectionReason;
+        this.qrCode = qrCode;
         this.createdAt = createdAt;
     }
 
@@ -81,4 +83,7 @@ public class Booking {
 
     public String getRejectionReason() { return rejectionReason; }
     public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
+
+    public String getQrCode() { return qrCode; }
+    public void setQrCode(String qrCode) { this.qrCode = qrCode; }
 }

@@ -7,6 +7,7 @@ import com.sliit.smart_campus.repository.NotificationRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.sliit.smart_campus.util.QRCodeGenerator;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -53,6 +54,19 @@ public class BookingController {
         
         booking.setStatus("PENDING");
         booking.setCreatedAt(LocalDateTime.now());
+
+        // Generate QR Code
+        try {
+            String qrContent = "Booking ID: " + booking.getBookingId() + 
+                               "\nResource: " + booking.getResourceName() + 
+                               "\nUser: " + booking.getUserEmail() + 
+                               "\nDate: " + booking.getDate() + 
+                               "\nTime: " + booking.getStartTime() + " - " + booking.getEndTime();
+            String qrCodeBase64 = QRCodeGenerator.generateQRCodeImage(qrContent, 250, 250);
+            booking.setQrCode(qrCodeBase64);
+        } catch (Exception e) {
+            System.err.println("Could not generate QR code: " + e.getMessage());
+        }
 
         Booking savedBooking = bookingRepository.save(booking);
 
