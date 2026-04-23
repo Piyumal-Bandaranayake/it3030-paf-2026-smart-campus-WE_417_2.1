@@ -78,6 +78,8 @@ public class ResourceController {
                     existing.setCapacity(resource.getCapacity());
                     existing.setStatus(resource.getStatus());
                     existing.setDescription(resource.getDescription());
+                    existing.setStartTime(resource.getStartTime());
+                    existing.setEndTime(resource.getEndTime());
 
                     return ResponseEntity.ok(resourceRepository.save(existing));
                 })

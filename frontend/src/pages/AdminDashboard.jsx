@@ -811,6 +811,18 @@ function ResourceManagementSection() {
   const [savingResource, setSavingResource] = useState(false);
   const [saveError, setSaveError] = useState("");
 
+  const formatTime = (timeStr) => {
+    if (!timeStr) return "N/A";
+    if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+    const [hours, minutes] = timeStr.split(":");
+    let h = parseInt(hours, 10);
+    const m = minutes || "00";
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12;
+    h = h ? h : 12;
+    return `${h}.${m}${ampm}`;
+  };
+
   const normalizeResource = (resource, index = 0) => ({
     ...resource,
     resourceCode: resource.resourceCode || `RES-${String(index + 1).padStart(3, "0")}`,
@@ -819,6 +831,8 @@ function ResourceManagementSection() {
     location: resource.location || "Not specified",
     capacity: resource.capacity ?? 0,
     status: resource.status || "ACTIVE",
+    startTime: resource.startTime || "08:00",
+    endTime: resource.endTime || "19:00",
   });
 
   const sortResourcesByCode = (resourceList) => {
@@ -878,6 +892,8 @@ function ResourceManagementSection() {
         capacity: resourceData.capacity,
         status: resourceData.status,
         description: resourceData.description || "",
+        startTime: resourceData.startTime,
+        endTime: resourceData.endTime,
       };
 
       if (editingResource) {
@@ -1034,8 +1050,12 @@ function ResourceManagementSection() {
             </div>
             <h3 className="mb-1 text-xl font-bold">{r.name}</h3>
             <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-6">{r.type} • {r.location}</p>
-            <div className="mb-6 inline-flex rounded-full border border-white/5 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <div className="mb-4 inline-flex rounded-full border border-white/5 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
               Capacity {r.capacity}
+            </div>
+            <div className="mb-6 flex items-center gap-2 text-xs font-bold text-slate-400">
+              <Clock size={14} className="text-indigo-400/70" />
+              <span>Availability: <span className="text-slate-300">{formatTime(r.startTime)} - {formatTime(r.endTime)}</span></span>
             </div>
             <div className="flex gap-3">
               <button

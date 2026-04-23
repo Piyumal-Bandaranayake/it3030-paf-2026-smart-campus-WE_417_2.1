@@ -15,6 +15,8 @@ public class Resource {
     private Integer capacity;
     private String status;
     private String description;
+    private String startTime;
+    private String endTime;
 
     // No-args constructor
     public Resource() {}
@@ -28,7 +30,9 @@ public class Resource {
             String location,
             Integer capacity,
             String status,
-            String description
+            String description,
+            String startTime,
+            String endTime
     ) {
         this.id = id;
         this.resourceCode = resourceCode;
@@ -38,6 +42,8 @@ public class Resource {
         this.capacity = capacity;
         this.status = status;
         this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
     }
 
     // Getters
@@ -49,6 +55,8 @@ public class Resource {
     public Integer getCapacity() { return capacity; }
     public String getStatus() { return status; }
     public String getDescription() { return description; }
+    public String getStartTime() { return startTime; }
+    public String getEndTime() { return endTime; }
 
     // Setters
     public void setId(String id) { this.id = id; }
@@ -59,6 +67,8 @@ public class Resource {
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
     public void setStatus(String status) { this.status = status; }
     public void setDescription(String description) { this.description = description; }
+    public void setStartTime(String startTime) { this.startTime = startTime; }
+    public void setEndTime(String endTime) { this.endTime = endTime; }
 
     @Override
     public String toString() {

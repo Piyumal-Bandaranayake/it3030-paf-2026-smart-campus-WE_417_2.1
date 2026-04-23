@@ -54,8 +54,8 @@ export default function ResourceList() {
           location: resource.location || "Not specified",
           capacity: resource.capacity ?? 0,
           status: resource.status || "ACTIVE",
-          startTime: resource.startTime || "8.00AM",
-          endTime: resource.endTime || "7.00PM",
+          startTime: resource.startTime || "08:00",
+          endTime: resource.endTime || "19:00",
         }));
 
         setResources(normalizedResources);

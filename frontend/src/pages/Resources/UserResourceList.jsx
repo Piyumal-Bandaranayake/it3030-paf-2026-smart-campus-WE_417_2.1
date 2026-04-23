@@ -1,6 +1,20 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./Resources.css";
 import BookingModal from "./BookingModal";
+import api from "../../api/axiosConfig";
+import { Clock } from "lucide-react";
+
+const formatTime = (timeStr) => {
+  if (!timeStr) return "N/A";
+  if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+  const [hours, minutes] = timeStr.split(":");
+  let h = parseInt(hours, 10);
+  const m = minutes || "00";
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  h = h ? h : 12;
+  return `${h}.${m}${ampm}`;
+};
 
 const initialResources = [
   { id: 1, name: "Lecture Hall A", type: "Lecture Hall", location: "1st Floor", capacity: 120, status: "ACTIVE", util: 87 },
@@ -10,9 +24,27 @@ const initialResources = [
 ];
 
 export default function UserResourceList() {
-  const [resources] = useState(initialResources);
+  const [resources, setResources] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get("/api/resource");
+        setResources(response.data || []);
+      } catch (err) {
+        console.error("Failed to fetch resources:", err);
+        setError("Failed to load resources.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchResources();
+  }, []);
 
   // 🔥 NEW STATES
   const [modalOpen, setModalOpen] = useState(false);
@@ -65,6 +97,7 @@ export default function UserResourceList() {
               <th>Type</th>
               <th>Location</th>
               <th>Capacity</th>
+              <th>Availability</th>
               <th>Status</th>
               <th>Util</th>
               <th>Action</th>
@@ -72,9 +105,21 @@ export default function UserResourceList() {
           </thead>
 
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? (
               <tr>
-                <td colSpan="7" style={{ textAlign: "center", padding: "20px" }}>
+                <td colSpan="8" style={{ textAlign: "center", padding: "20px" }}>
+                  Loading resources...
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan="8" style={{ textAlign: "center", padding: "20px", color: "red" }}>
+                  {error}
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan="8" style={{ textAlign: "center", padding: "20px" }}>
                   No resources available
                 </td>
               </tr>
@@ -94,6 +139,12 @@ export default function UserResourceList() {
                   <td>{r.type}</td>
                   <td>{r.location}</td>
                   <td>{r.capacity}</td>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                      <Clock size={14} color="gray" />
+                      {formatTime(r.startTime || "08:00")} - {formatTime(r.endTime || "19:00")}
+                    </div>
+                  </td>
 
                   {/* STATUS */}
                   <td>
