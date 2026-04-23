@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, ChevronLeft, ChevronRight, Building2, MapPin, Users, Clock } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Building2, MapPin, Users, Clock, Plus, Trash2 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ResourceModal from "./ResourceModal";
@@ -97,12 +97,58 @@ export default function ResourceList() {
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const current = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  /* ADD */
-  const addResource = (newRes) => {
-    setResources((prev) => [
-      ...prev,
-      { id: prev.length + 1, ...newRes },
-    ]);
+  /* API ACTIONS */
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const handleSaveResource = async (resourceData) => {
+    try {
+      setSaving(true);
+      setSaveError("");
+
+      const payload = {
+        name: resourceData.name,
+        type: resourceData.type,
+        location: resourceData.location,
+        capacity: resourceData.capacity,
+        status: resourceData.status,
+        description: resourceData.description || "",
+        startTime: resourceData.startTime,
+        endTime: resourceData.endTime,
+      };
+
+      if (selectedResource && selectedResource.id) {
+        // Update
+        const response = await api.put(`/api/resource/${selectedResource.id}`, payload);
+        setResources((prev) =>
+          prev.map((r) => (r.id === selectedResource.id ? { ...r, ...response.data } : r))
+        );
+      } else {
+        // Create
+        const response = await api.post("/api/resource", payload);
+        setResources((prev) => [...prev, response.data]);
+      }
+
+      setModalOpen(false);
+      setSelectedResource(null);
+    } catch (err) {
+      console.error("Failed to save resource:", err);
+      setSaveError("Failed to save resource to the backend.");
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteResource = async (resource) => {
+    if (!window.confirm(`Are you sure you want to delete ${resource.name}?`)) return;
+    try {
+      await api.delete(`/api/resource/${resource.id}`);
+      setResources((prev) => prev.filter((r) => r.id !== resource.id));
+    } catch (err) {
+      console.error("Failed to delete resource:", err);
+      alert("Failed to delete resource.");
+    }
   };
 
   const getStatusColor = (status) => {
@@ -235,7 +281,7 @@ export default function ResourceList() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          {r.status === "ACTIVE" ? (
+                          {r.status === "ACTIVE" && (
                             <button
                               onClick={() => {
                                 setSelectedResource(r);
@@ -245,10 +291,6 @@ export default function ResourceList() {
                             >
                               Book
                             </button>
-                          ) : (
-                            <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                              Unavailable
-                            </span>
                           )}
                         </div>
                       </td>
@@ -297,8 +339,14 @@ export default function ResourceList() {
 
       <ResourceModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSave={addResource}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedResource(null);
+        }}
+        onSave={handleSaveResource}
+        initialData={selectedResource}
+        saving={saving}
+        saveError={saveError}
       />
 
       <BookingModal

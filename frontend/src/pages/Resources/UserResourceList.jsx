@@ -142,7 +142,9 @@ export default function UserResourceList() {
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
                       <Clock size={14} color="gray" />
-                      {formatTime(r.startTime || "08:00")} - {formatTime(r.endTime || "19:00")}
+                      {r.startTime && r.endTime 
+                        ? `${formatTime(r.startTime)} - ${formatTime(r.endTime)}`
+                        : "No hours set"}
                     </div>
                   </td>
 

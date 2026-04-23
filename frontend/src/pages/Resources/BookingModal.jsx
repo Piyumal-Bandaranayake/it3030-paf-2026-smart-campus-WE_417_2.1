@@ -28,6 +28,19 @@ export default function BookingModal({ open, onClose, resource }) {
       return;
     }
 
+    // Time validation
+    if (resource?.startTime && resource?.endTime) {
+      if (form.startTime < resource.startTime || form.endTime > resource.endTime) {
+        alert(`This resource is only available between ${resource.startTime} and ${resource.endTime}.`);
+        return;
+      }
+    }
+
+    if (form.startTime >= form.endTime) {
+      alert("End time must be after start time.");
+      return;
+    }
+
     try {
       setLoading(true);
       const storedUser = sessionStorage.getItem("user");
