@@ -1,9 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { ArrowRight, CheckCircle2, Building2, Wrench, ShieldCheck, Zap } from 'lucide-react';
 
 const Home = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-indigo-500/30">
       <Navbar />
@@ -19,13 +22,7 @@ const Home = () => {
 
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1.5 text-sm font-semibold text-indigo-400 mb-8 animate-fade-in">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75"></span>
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500"></span>
-                </span>
-                Next-Gen Campus Management
-              </div>
+
               <h1 className="mx-auto max-w-4xl text-5xl font-extrabold tracking-tight sm:text-7xl">
                 Smart Campus <span className="bg-gradient-to-r from-indigo-400 via-blue-400 to-purple-400 bg-clip-text text-transparent italic">Operations Hub</span>
               </h1>
@@ -33,7 +30,10 @@ const Home = () => {
                 Empower your institution with a unified platform for resource booking, equipment tracking, and operational efficiency. Experience the future of campus management today.
               </p>
               <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <button className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-2xl bg-indigo-600 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-500 hover:shadow-[0_0_40px_rgba(79,70,229,0.4)] active:scale-95">
+                <button
+                  onClick={() => navigate('/login')}
+                  className="group relative flex items-center justify-center gap-2 overflow-hidden rounded-2xl bg-indigo-600 px-8 py-4 text-sm font-bold text-white transition-all hover:bg-indigo-500 hover:shadow-[0_0_40px_rgba(79,70,229,0.4)] active:scale-95"
+                >
                   Get Started for Free
                   <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                 </button>
@@ -103,7 +103,7 @@ const Home = () => {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="rounded-[48px] bg-gradient-to-br from-indigo-600 to-blue-700 p-12 lg:p-20 relative overflow-hidden">
               <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 h-96 w-96 rounded-full bg-white/10 blur-[100px]" />
-              
+
               <div className="relative z-10 grid grid-cols-1 gap-12 text-center md:grid-cols-3">
                 <div>
                   <div className="text-5xl font-black text-white">99.9%</div>
