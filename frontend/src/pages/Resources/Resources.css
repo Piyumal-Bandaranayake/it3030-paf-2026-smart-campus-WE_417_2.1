@@ -71,7 +71,6 @@ table {
 }
 
 thead {
-  background: #f0fdf4;
 }
 
 th, td {
@@ -81,10 +80,12 @@ th, td {
 
 tr {
   border-top: 1px solid #eee;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 tr:hover {
-  background: #f9fafb;
+  box-shadow: inset 2px 0 0 #166534;
 }
 
 /* RESOURCE ICON */

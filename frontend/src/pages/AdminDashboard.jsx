@@ -34,11 +34,11 @@ import CommentSection from "../components/CommentSection";
 import api from "../api/axiosConfig";
 
 const sidebarLinks = [
-  { id: "overview",  label: "Overview",            icon: LayoutDashboard },
-  { id: "users",     label: "User Management",      icon: UsersIcon },
-  { id: "bookings",  label: "Booking Management",   icon: CalendarCheck },
-  { id: "resources", label: "Resource Management",  icon: Building2 },
-  { id: "tickets",   label: "Ticket Management",    icon: Ticket },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "users", label: "User Management", icon: UsersIcon },
+  { id: "bookings", label: "Booking Management", icon: CalendarCheck },
+  { id: "resources", label: "Resource Management", icon: Building2 },
+  { id: "tickets", label: "Ticket Management", icon: Ticket },
 ];
 
 export default function AdminDashboard() {
@@ -81,11 +81,10 @@ export default function AdminDashboard() {
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`group flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-sm font-bold transition-all ${
-                activeTab === id 
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" 
-                  : "text-slate-400 hover:bg-white/5 hover:text-white"
-              }`}
+              className={`group flex w-full items-center gap-4 rounded-2xl px-5 py-4 text-sm font-bold transition-all ${activeTab === id
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                : "text-slate-400 hover:bg-white/5 hover:text-white"
+                }`}
             >
               <Icon size={20} className={activeTab === id ? "text-white" : "group-hover:text-indigo-400 transition-colors"} />
               <span>{label}</span>
@@ -105,7 +104,7 @@ export default function AdminDashboard() {
                 <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-400">Super Admin</div>
               </div>
             </div>
-            <button 
+            <button
               onClick={handleLogout}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-red-500/10 py-3 text-xs font-bold text-red-400 transition-all hover:bg-red-500/20"
             >
@@ -130,11 +129,11 @@ export default function AdminDashboard() {
 
         {/* Dynamic Section Rendering */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {activeTab === "overview"  && <OverviewSection onNavigate={(tab) => setActiveTab(tab)} />}
-          {activeTab === "users"     && <UserManagementSection />}
-          {activeTab === "bookings"  && <BookingManagementSection />}
+          {activeTab === "overview" && <OverviewSection onNavigate={(tab) => setActiveTab(tab)} />}
+          {activeTab === "users" && <UserManagementSection />}
+          {activeTab === "bookings" && <BookingManagementSection />}
           {activeTab === "resources" && <ResourceManagementSection />}
-          {activeTab === "tickets"   && <TicketManagementSection user={user} />}
+          {activeTab === "tickets" && <TicketManagementSection user={user} />}
         </div>
       </main>
     </div>
@@ -171,28 +170,28 @@ function OverviewSection({ onNavigate }) {
 
   const getTab = (type) => {
     switch (type) {
-      case "TICKET":       return "tickets";
+      case "TICKET": return "tickets";
       case "REGISTRATION": return "users";
-      case "BOOKING":      return "bookings";
-      default:             return "overview";
+      case "BOOKING": return "bookings";
+      default: return "overview";
     }
   };
 
   const getIcon = (type) => {
     switch (type) {
-      case "TICKET":       return <Ticket size={18} />;
+      case "TICKET": return <Ticket size={18} />;
       case "REGISTRATION": return <UsersIcon size={18} />;
-      case "BOOKING":      return <CalendarCheck size={18} />;
-      default:             return <Clock size={18} />;
+      case "BOOKING": return <CalendarCheck size={18} />;
+      default: return <Clock size={18} />;
     }
   };
 
   const getTypeStyle = (type) => {
     switch (type) {
-      case "TICKET":       return { label: "Ticket",   cls: "text-amber-400 bg-amber-400/10 border-amber-400/20" };
+      case "TICKET": return { label: "Ticket", cls: "text-amber-400 bg-amber-400/10 border-amber-400/20" };
       case "REGISTRATION": return { label: "New User", cls: "text-blue-400 bg-blue-400/10 border-blue-400/20" };
-      case "BOOKING":      return { label: "Booking",  cls: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" };
-      default:             return { label: type,       cls: "text-indigo-400 bg-indigo-400/10 border-indigo-400/20" };
+      case "BOOKING": return { label: "Booking", cls: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" };
+      default: return { label: type, cls: "text-indigo-400 bg-indigo-400/10 border-indigo-400/20" };
     }
   };
 
@@ -231,11 +230,10 @@ function OverviewSection({ onNavigate }) {
                 return (
                   <div key={n.id} className="flex items-center gap-4 rounded-2xl bg-white/5 px-5 py-4 border border-white/5 hover:border-white/10 transition-all group">
                     {/* Icon */}
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                      n.type === "TICKET" ? "bg-amber-400/10 text-amber-400" :
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${n.type === "TICKET" ? "bg-amber-400/10 text-amber-400" :
                       n.type === "REGISTRATION" ? "bg-blue-400/10 text-blue-400" :
-                      "bg-emerald-400/10 text-emerald-400"
-                    }`}>
+                        "bg-emerald-400/10 text-emerald-400"
+                      }`}>
                       {getIcon(n.type)}
                     </div>
                     {/* Text */}
@@ -339,7 +337,7 @@ function UserManagementSection() {
 
   const deleteUser = async (id) => {
     if (!window.confirm("Are you sure you want to remove this user? This action cannot be undone.")) return;
-    
+
     try {
       await api.delete(`/api/users/${id}`);
       setUsers((prev) => prev.filter((u) => u.id !== id));
@@ -370,17 +368,16 @@ function UserManagementSection() {
               <button
                 key={r}
                 onClick={() => setRoleFilter(r)}
-                className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${
-                  roleFilter === r
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
-                    : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5"
-                }`}
+                className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${roleFilter === r
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                  : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5"
+                  }`}
               >
                 {r}
               </button>
             ))}
           </div>
-          <button 
+          <button
             onClick={() => setAddUserModalOpen(true)}
             className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-indigo-600/20"
           >
@@ -391,7 +388,7 @@ function UserManagementSection() {
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="bg-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500">
+            <tr className="bg-slate-800/50 text-[10px] font-black uppercase tracking-widest text-slate-500">
               <th className="px-8 py-5">User</th>
               <th className="px-8 py-5">Role</th>
               <th className="px-8 py-5">Status</th>
@@ -422,7 +419,7 @@ function UserManagementSection() {
                   </span>
                 </td>
                 <td className="px-8 py-6 text-right">
-                  <button 
+                  <button
                     onClick={() => deleteUser(u.id)}
                     className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all"
                     title="Remove User"
@@ -487,7 +484,7 @@ function UserManagementSection() {
                   <option value="ADMIN">Admin</option>
                 </select>
               </div>
-              
+
               <div className="flex gap-3 mt-8">
                 <button
                   type="button"
@@ -545,13 +542,13 @@ function BookingManagementSection() {
     try {
       const payload = { status: newStatus };
       if (reason) payload.reason = reason;
-      
+
       await api.put(`/api/bookings/${id}/status`, payload);
-      
+
       setBookings((prev) =>
         prev.map((b) => (b.id === id ? { ...b, status: newStatus, rejectionReason: reason || b.rejectionReason } : b))
       );
-      
+
       if (newStatus === "REJECTED") {
         setRejectingBooking(null);
         setRejectionReason("");
@@ -600,7 +597,7 @@ function BookingManagementSection() {
       case "APPROVED": return "text-emerald-400 bg-emerald-400/10 border border-emerald-400/20";
       case "REJECTED": return "text-red-400 bg-red-400/10 border border-red-400/20";
       case "CANCELLED": return "text-slate-400 bg-slate-400/10 border border-slate-400/20";
-      default:         return "text-amber-400 bg-amber-400/10 border border-amber-400/20";
+      default: return "text-amber-400 bg-amber-400/10 border border-amber-400/20";
     }
   };
 
@@ -609,11 +606,11 @@ function BookingManagementSection() {
       {/* Stats Row */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {[
-          { label: "Total",    value: totalCount,    color: "text-indigo-400",  bg: "bg-indigo-400/10" },
-          { label: "Pending",  value: pendingCount,  color: "text-amber-400",   bg: "bg-amber-400/10" },
+          { label: "Total", value: totalCount, color: "text-indigo-400", bg: "bg-indigo-400/10" },
+          { label: "Pending", value: pendingCount, color: "text-amber-400", bg: "bg-amber-400/10" },
           { label: "Approved", value: approvedCount, color: "text-emerald-400", bg: "bg-emerald-400/10" },
-          { label: "Rejected", value: rejectedCount, color: "text-red-400",     bg: "bg-red-400/10" },
-          { label: "Cancelled", value: cancelledCount, color: "text-slate-400",   bg: "bg-slate-400/10" },
+          { label: "Rejected", value: rejectedCount, color: "text-red-400", bg: "bg-red-400/10" },
+          { label: "Cancelled", value: cancelledCount, color: "text-slate-400", bg: "bg-slate-400/10" },
         ].map((s) => (
           <div key={s.label} className={`rounded-3xl border border-white/5 ${s.bg} p-6 text-center`}>
             <div className={`text-3xl font-black ${s.color}`}>{s.value}</div>
@@ -659,11 +656,10 @@ function BookingManagementSection() {
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
-                  className={`rounded-xl border px-4 py-2 text-xs font-bold transition-all ${
-                    statusFilter === s
-                      ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
-                      : "border-white/5 bg-slate-900/50 text-slate-400 hover:text-white"
-                  }`}
+                  className={`rounded-xl border px-4 py-2 text-xs font-bold transition-all ${statusFilter === s
+                    ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
+                    : "border-white/5 bg-slate-900/50 text-slate-400 hover:text-white"
+                    }`}
                 >
                   {s === "ALL" ? "All" : s.charAt(0) + s.slice(1).toLowerCase()}
                 </button>
@@ -766,14 +762,14 @@ function BookingManagementSection() {
             <p className="text-sm text-slate-400 mb-6">
               Please provide a reason for rejecting the booking for <span className="text-white font-bold">{rejectingBooking.resourceName}</span>.
             </p>
-            
+
             <textarea
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               placeholder="Enter rejection reason..."
               className="w-full h-32 rounded-2xl border border-white/5 bg-slate-800/50 p-4 text-sm text-white placeholder-slate-600 focus:border-red-500/50 focus:outline-none mb-6 resize-none"
             />
-            
+
             <div className="flex gap-3">
               <button
                 onClick={() => {
@@ -811,6 +807,18 @@ function ResourceManagementSection() {
   const [savingResource, setSavingResource] = useState(false);
   const [saveError, setSaveError] = useState("");
 
+  const formatTime = (timeStr) => {
+    if (!timeStr) return "N/A";
+    if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+    const [hours, minutes] = timeStr.split(":");
+    let h = parseInt(hours, 10);
+    const m = minutes || "00";
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12;
+    h = h ? h : 12;
+    return `${h}.${m}${ampm}`;
+  };
+
   const normalizeResource = (resource, index = 0) => ({
     ...resource,
     resourceCode: resource.resourceCode || `RES-${String(index + 1).padStart(3, "0")}`,
@@ -819,6 +827,8 @@ function ResourceManagementSection() {
     location: resource.location || "Not specified",
     capacity: resource.capacity ?? 0,
     status: resource.status || "ACTIVE",
+    startTime: resource.startTime,
+    endTime: resource.endTime,
   });
 
   const sortResourcesByCode = (resourceList) => {
@@ -878,12 +888,14 @@ function ResourceManagementSection() {
         capacity: resourceData.capacity,
         status: resourceData.status,
         description: resourceData.description || "",
+        startTime: resourceData.startTime,
+        endTime: resourceData.endTime,
       };
 
       if (editingResource) {
         // Update existing resource
         const response = await api.put(`/api/resource/${editingResource.id}`, payload);
-        
+
         setResources((prev) =>
           prev.map((resource) =>
             resource.id === editingResource.id ? normalizeResource(response.data, resources.length) : resource
@@ -898,8 +910,8 @@ function ResourceManagementSection() {
 
       handleCloseModal();
     } catch (saveRequestError) {
-      setSaveError(editingResource 
-        ? "Unable to update this resource right now." 
+      setSaveError(editingResource
+        ? "Unable to update this resource right now."
         : "Unable to save this resource to the database right now."
       );
       throw saveRequestError;
@@ -963,11 +975,11 @@ function ResourceManagementSection() {
   const filteredResources = resources.filter((resource) => {
     // Filter by type (All/Facilities/Equipment)
     const matchesFilter = resourceFilter === "All" || getResourceCategory(resource) === resourceFilter;
-    
+
     // Filter by search query (name)
-    const matchesSearch = searchQuery === "" || 
+    const matchesSearch = searchQuery === "" ||
       resource.name.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     return matchesFilter && matchesSearch;
   });
 
@@ -991,11 +1003,10 @@ function ResourceManagementSection() {
             <button
               key={t}
               onClick={() => setResourceFilter(t)}
-              className={`rounded-xl border px-5 py-2 text-xs font-bold transition-all ${
-                resourceFilter === t
-                  ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
-                  : "border-white/5 bg-slate-900/50 text-slate-400 hover:text-white"
-              }`}
+              className={`rounded-xl border px-5 py-2 text-xs font-bold transition-all ${resourceFilter === t
+                ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
+                : "border-white/5 bg-slate-900/50 text-slate-400 hover:text-white"
+                }`}
             >
               {t}
             </button>
@@ -1034,8 +1045,12 @@ function ResourceManagementSection() {
             </div>
             <h3 className="mb-1 text-xl font-bold">{r.name}</h3>
             <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-6">{r.type} • {r.location}</p>
-            <div className="mb-6 inline-flex rounded-full border border-white/5 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+            <div className="mb-4 inline-flex rounded-full border border-white/5 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
               Capacity {r.capacity}
+            </div>
+            <div className="mb-6 flex items-center gap-2 text-xs font-bold text-slate-400">
+              <Clock size={14} className="text-indigo-400/70" />
+              <span>Availability: <span className="text-slate-300">{formatTime(r.startTime)} - {formatTime(r.endTime)}</span></span>
             </div>
             <div className="flex gap-3">
               <button
@@ -1077,17 +1092,17 @@ function ResourceManagementSection() {
 const TICKET_STATUSES = ["Open", "In Progress", "Resolved", "Closed", "Rejected"];
 
 const STATUS_CFG = {
-  "Open":        { bg: "rgba(99,102,241,0.15)",  border: "rgba(99,102,241,0.4)",  text: "#818cf8", dot: "#6366f1" },
-  "In Progress": { bg: "rgba(245,158,11,0.15)",  border: "rgba(245,158,11,0.4)",  text: "#fbbf24", dot: "#f59e0b" },
-  "Resolved":    { bg: "rgba(34,197,94,0.15)",   border: "rgba(34,197,94,0.4)",   text: "#4ade80", dot: "#22c55e" },
-  "Closed":      { bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.4)", text: "#94a3b8", dot: "#64748b" },
-  "Rejected":    { bg: "rgba(239,68,68,0.15)",   border: "rgba(239,68,68,0.4)",   text: "#f87171", dot: "#ef4444" },
+  "Open": { bg: "rgba(99,102,241,0.15)", border: "rgba(99,102,241,0.4)", text: "#818cf8", dot: "#6366f1" },
+  "In Progress": { bg: "rgba(245,158,11,0.15)", border: "rgba(245,158,11,0.4)", text: "#fbbf24", dot: "#f59e0b" },
+  "Resolved": { bg: "rgba(34,197,94,0.15)", border: "rgba(34,197,94,0.4)", text: "#4ade80", dot: "#22c55e" },
+  "Closed": { bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.4)", text: "#94a3b8", dot: "#64748b" },
+  "Rejected": { bg: "rgba(239,68,68,0.15)", border: "rgba(239,68,68,0.4)", text: "#f87171", dot: "#ef4444" },
 };
 
 const PRIORITY_CFG = {
-  low:      { label: "Low",      color: "#22c55e" },
-  medium:   { label: "Medium",   color: "#f59e0b" },
-  high:     { label: "High",     color: "#f97316" },
+  low: { label: "Low", color: "#22c55e" },
+  medium: { label: "Medium", color: "#f59e0b" },
+  high: { label: "High", color: "#f97316" },
   critical: { label: "Critical", color: "#ef4444" },
 };
 
@@ -1108,14 +1123,14 @@ function StatusBadge({ status }) {
 }
 
 function TicketManagementSection({ user }) {
-  const [tickets,        setTickets]        = useState([]);
-  const [search,         setSearch]         = useState("");
-  const [statusFilter,   setStatusFilter]   = useState("All");
+  const [tickets, setTickets] = useState([]);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
-  const [expandedId,     setExpandedId]     = useState(null);
-  
+  const [expandedId, setExpandedId] = useState(null);
+
   const [rejectingTicketId, setRejectingTicketId] = useState(null);
-  const [rejectionReason,    setRejectionReason]    = useState("");
+  const [rejectionReason, setRejectionReason] = useState("");
   const [isSubmittingReject, setIsSubmittingReject] = useState(false);
 
   const [assignmentModalTicket, setAssignmentModalTicket] = useState(null);
@@ -1126,7 +1141,7 @@ function TicketManagementSection({ user }) {
     try {
       const response = await api.get("/api/tickets");
       setTickets(response.data || []);
-      
+
       const usersRes = await api.get("/api/users");
       setAllUsers(usersRes.data || []);
     } catch (err) {
@@ -1185,12 +1200,12 @@ function TicketManagementSection({ user }) {
       alert("Please enter a reason for rejection.");
       return;
     }
-    
+
     setIsSubmittingReject(true);
     try {
-      await api.put(`/api/tickets/${rejectingTicketId}/status`, { 
-        status: "Rejected", 
-        rejectionReason: rejectionReason 
+      await api.put(`/api/tickets/${rejectingTicketId}/status`, {
+        status: "Rejected",
+        rejectionReason: rejectionReason
       });
       setTickets(prev => prev.map(t => t.id === rejectingTicketId ? { ...t, status: "Rejected", rejectionReason: rejectionReason } : t));
       setRejectingTicketId(null);
@@ -1203,7 +1218,7 @@ function TicketManagementSection({ user }) {
       setIsSubmittingReject(false);
     }
   };
-  
+
   const handleAssignStaff = async (staffName, role, staffEmail) => {
     setAssigningLoading(true);
     try {
@@ -1216,15 +1231,15 @@ function TicketManagementSection({ user }) {
         payload.manager = staffName;
         payload.managerEmail = staffEmail;
       }
-      
+
       await api.put(`/api/tickets/${assignmentModalTicket.id}/assign`, payload);
-      
-      setTickets(prev => prev.map(t => t.id === assignmentModalTicket.id ? { 
-        ...t, 
+
+      setTickets(prev => prev.map(t => t.id === assignmentModalTicket.id ? {
+        ...t,
         assignedTechnician: role === "TECHNICIAN" ? staffName : t.assignedTechnician,
         assignedManager: role === "MANAGER" ? staffName : t.assignedManager
       } : t));
-      
+
       setAssignmentModalTicket(null);
       window.dispatchEvent(new Event("ticket-submitted"));
     } catch (err) {
@@ -1239,12 +1254,12 @@ function TicketManagementSection({ user }) {
     try {
       const payload = {};
       if (roleType === "TECHNICIAN") payload.technician = null;
-      if (roleType === "MANAGER")    payload.manager = null;
-      
+      if (roleType === "MANAGER") payload.manager = null;
+
       await api.put(`/api/tickets/${ticketId}/assign`, payload);
-      
-      setTickets(prev => prev.map(t => t.id === ticketId ? { 
-        ...t, 
+
+      setTickets(prev => prev.map(t => t.id === ticketId ? {
+        ...t,
         assignedTechnician: roleType === "TECHNICIAN" ? null : t.assignedTechnician,
         assignedManager: roleType === "MANAGER" ? null : t.assignedManager
       } : t));
@@ -1255,14 +1270,14 @@ function TicketManagementSection({ user }) {
   };
 
   const filtered = tickets.filter((t) => {
-    const matchStatus   = statusFilter   === "All" || t.status   === statusFilter;
+    const matchStatus = statusFilter === "All" || t.status === statusFilter;
     const matchPriority = priorityFilter === "All" || t.priority === priorityFilter.toLowerCase();
     const q = search.toLowerCase();
     const matchSearch = !q ||
-      t.ticketId.toLowerCase().includes(q)     ||
-      t.resource.toLowerCase().includes(q)     ||
-      t.category.toLowerCase().includes(q)     ||
-      (t.contactName  || "").toLowerCase().includes(q) ||
+      t.ticketId.toLowerCase().includes(q) ||
+      t.resource.toLowerCase().includes(q) ||
+      t.category.toLowerCase().includes(q) ||
+      (t.contactName || "").toLowerCase().includes(q) ||
       t.description.toLowerCase().includes(q);
     return matchStatus && matchPriority && matchSearch;
   });
@@ -1345,7 +1360,7 @@ function TicketManagementSection({ user }) {
             placeholder="Search by ID, resource, user, category…"
             style={{ ...inputBase, width: "100%", paddingLeft: "2.25rem", boxSizing: "border-box" }}
             onFocus={(e) => { e.target.style.borderColor = "rgba(99,102,241,0.5)"; }}
-            onBlur={(e)  => { e.target.style.borderColor = "rgba(255,255,255,0.07)"; }}
+            onBlur={(e) => { e.target.style.borderColor = "rgba(255,255,255,0.07)"; }}
           />
         </div>
 
@@ -1440,7 +1455,7 @@ function TicketManagementSection({ user }) {
         {filtered.map((ticket) => {
           const ticket_id = ticket.id || ticket._id;
           const priorityCfg = PRIORITY_CFG[ticket.priority] || { label: ticket.priority, color: "#94a3b8" };
-          const isExpanded  = expandedId === ticket_id;
+          const isExpanded = expandedId === ticket_id;
           const date = new Date(ticket.createdAt).toLocaleDateString("en-GB", {
             day: "2-digit", month: "short", year: "numeric",
           });
@@ -1620,7 +1635,7 @@ function TicketManagementSection({ user }) {
                         onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(99,102,241,0.15)"; }}
                         onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(99,102,241,0.1)"; }}
                       >
-                        <UsersIcon size={14} /> 
+                        <UsersIcon size={14} />
                         {ticket.assignedTechnician || ticket.assignedManager ? "Reassign Staff" : "Assign Staff"}
                       </button>
 
@@ -1634,7 +1649,7 @@ function TicketManagementSection({ user }) {
                               <button
                                 onClick={() => handleUnassignStaff(ticket.id, "TECHNICIAN")}
                                 style={{
-                                  background: "none", border: "none", color: "#ef4444", 
+                                  background: "none", border: "none", color: "#ef4444",
                                   cursor: "pointer", display: "flex", alignItems: "center",
                                   padding: "2px", borderRadius: "4px",
                                 }}
@@ -1654,7 +1669,7 @@ function TicketManagementSection({ user }) {
                               <button
                                 onClick={() => handleUnassignStaff(ticket.id, "MANAGER")}
                                 style={{
-                                  background: "none", border: "none", color: "#ef4444", 
+                                  background: "none", border: "none", color: "#ef4444",
                                   cursor: "pointer", display: "flex", alignItems: "center",
                                   padding: "2px", borderRadius: "4px",
                                 }}
@@ -1671,7 +1686,7 @@ function TicketManagementSection({ user }) {
                     </div>
                   </div>
 
-                   {/* Contact */}
+                  {/* Contact */}
                   <div>
                     <div style={{
                       fontSize: "0.63rem", fontWeight: 800,
@@ -1681,11 +1696,11 @@ function TicketManagementSection({ user }) {
                       Preferred Contact
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-                      {ticket.contactName  && <span style={{ fontSize: "0.8rem", color: "#cbd5e1" }}>👤 {ticket.contactName}</span>}
+                      {ticket.contactName && <span style={{ fontSize: "0.8rem", color: "#cbd5e1" }}>👤 {ticket.contactName}</span>}
                       {ticket.contactEmail && <span style={{ fontSize: "0.8rem", color: "#cbd5e1" }}>✉️ {ticket.contactEmail}</span>}
                       {ticket.contactPhone && <span style={{ fontSize: "0.8rem", color: "#cbd5e1" }}>📞 {ticket.contactPhone}</span>}
                     </div>
-                    
+
                     {/* Images */}
                     {ticket.images && ticket.images.length > 0 && (
                       <div style={{ marginTop: "1rem" }}>
@@ -1695,10 +1710,10 @@ function TicketManagementSection({ user }) {
                         <div style={{ display: "flex", gap: "0.5rem" }}>
                           {ticket.images.map((img, i) => (
                             <a key={i} href={`http://localhost:8080${img}`} target="_blank" rel="noreferrer">
-                              <img 
-                                src={`http://localhost:8080${img}`} 
-                                alt="attachment" 
-                                style={{ width: 60, height: 60, objectFit: "cover", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.1)" }} 
+                              <img
+                                src={`http://localhost:8080${img}`}
+                                alt="attachment"
+                                style={{ width: 60, height: 60, objectFit: "cover", borderRadius: "0.5rem", border: "1px solid rgba(255,255,255,0.1)" }}
                               />
                             </a>
                           ))}
@@ -1726,10 +1741,10 @@ function TicketManagementSection({ user }) {
                       {ticket.id}
                     </span>
                   </div>
-                    {/* Collaboration Hub */}
-                    <div style={{ marginTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.02)", paddingTop: "0.5rem" }}>
-                      <CommentSection ticketId={ticket_id} user={user} />
-                    </div>
+                  {/* Collaboration Hub */}
+                  <div style={{ marginTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.02)", paddingTop: "0.5rem" }}>
+                    <CommentSection ticketId={ticket_id} user={user} />
+                  </div>
                 </div>
               )}
             </div>
@@ -1838,7 +1853,7 @@ function TicketManagementSection({ user }) {
             <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "1rem", paddingRight: "0.5rem" }}>
               {[
                 { id: "TECHNICIAN", label: "Technicians", color: "#818cf8" },
-                { id: "MANAGER",    label: "Managers",    color: "#c084fc" }
+                { id: "MANAGER", label: "Managers", color: "#c084fc" }
               ].map((role) => (
                 <div key={role.id}>
                   <div style={{ fontSize: "0.6rem", fontWeight: 900, textTransform: "uppercase", color: "#475569", marginBottom: "0.6rem", letterSpacing: "0.12em" }}>
@@ -1860,11 +1875,11 @@ function TicketManagementSection({ user }) {
                         onMouseEnter={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.transform = "translateX(4px)"; } }}
                         onMouseLeave={(e) => { if (!assigningLoading) { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = "translateX(0)"; } }}
                       >
-                        <div style={{ 
-                          width: "2.25rem", height: "2.25rem", borderRadius: "0.75rem", 
-                          background: `${role.color}15`, color: role.color, 
-                          display: "flex", alignItems: "center", justifyContent: "center", 
-                          fontSize: "0.85rem", fontWeight: 800, border: `1px solid ${role.color}30` 
+                        <div style={{
+                          width: "2.25rem", height: "2.25rem", borderRadius: "0.75rem",
+                          background: `${role.color}15`, color: role.color,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: "0.85rem", fontWeight: 800, border: `1px solid ${role.color}30`
                         }}>
                           {u.name[0]}
                         </div>
@@ -1876,9 +1891,9 @@ function TicketManagementSection({ user }) {
                       </button>
                     ))}
                     {allUsers.filter(u => u.role === role.id).length === 0 && (
-                      <div style={{ 
-                        fontSize: "0.75rem", color: "#475569", fontStyle: "italic", 
-                        padding: "1rem", background: "rgba(255,255,255,0.02)", 
+                      <div style={{
+                        fontSize: "0.75rem", color: "#475569", fontStyle: "italic",
+                        padding: "1rem", background: "rgba(255,255,255,0.02)",
                         borderRadius: "1rem", border: "1px dashed rgba(255,255,255,0.05)",
                         textAlign: "center"
                       }}>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, ChevronLeft, ChevronRight, Building2, MapPin, Users } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Building2, MapPin, Users, Clock, Plus, Trash2 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import ResourceModal from "./ResourceModal";
@@ -7,6 +7,19 @@ import BookingModal from "./BookingModal";
 import api from "../../api/axiosConfig";
 
 const PER_PAGE = 6;
+const formatTime = (timeStr) => {
+  if (!timeStr) return "N/A";
+  // Handle already formatted strings like "8.00AM"
+  if (timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+
+  const [hours, minutes] = timeStr.split(":");
+  let h = parseInt(hours, 10);
+  const m = minutes || "00";
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  h = h ? h : 12;
+  return `${h}.${m}${ampm}`;
+};
 
 export default function ResourceList() {
   const [resources, setResources] = useState([]);
@@ -41,6 +54,8 @@ export default function ResourceList() {
           location: resource.location || "Not specified",
           capacity: resource.capacity ?? 0,
           status: resource.status || "ACTIVE",
+          startTime: resource.startTime || "08:00",
+          endTime: resource.endTime || "19:00",
         }));
 
         setResources(normalizedResources);
@@ -82,12 +97,58 @@ export default function ResourceList() {
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const current = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  /* ADD */
-  const addResource = (newRes) => {
-    setResources((prev) => [
-      ...prev,
-      { id: prev.length + 1, ...newRes },
-    ]);
+  /* API ACTIONS */
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const handleSaveResource = async (resourceData) => {
+    try {
+      setSaving(true);
+      setSaveError("");
+
+      const payload = {
+        name: resourceData.name,
+        type: resourceData.type,
+        location: resourceData.location,
+        capacity: resourceData.capacity,
+        status: resourceData.status,
+        description: resourceData.description || "",
+        startTime: resourceData.startTime,
+        endTime: resourceData.endTime,
+      };
+
+      if (selectedResource && selectedResource.id) {
+        // Update
+        const response = await api.put(`/api/resource/${selectedResource.id}`, payload);
+        setResources((prev) =>
+          prev.map((r) => (r.id === selectedResource.id ? { ...r, ...response.data } : r))
+        );
+      } else {
+        // Create
+        const response = await api.post("/api/resource", payload);
+        setResources((prev) => [...prev, response.data]);
+      }
+
+      setModalOpen(false);
+      setSelectedResource(null);
+    } catch (err) {
+      console.error("Failed to save resource:", err);
+      setSaveError("Failed to save resource to the backend.");
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteResource = async (resource) => {
+    if (!window.confirm(`Are you sure you want to delete ${resource.name}?`)) return;
+    try {
+      await api.delete(`/api/resource/${resource.id}`);
+      setResources((prev) => prev.filter((r) => r.id !== resource.id));
+    } catch (err) {
+      console.error("Failed to delete resource:", err);
+      alert("Failed to delete resource.");
+    }
   };
 
   const getStatusColor = (status) => {
@@ -124,17 +185,16 @@ export default function ResourceList() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          
+
           <div className="flex gap-2 lg:col-span-2">
             {["", "ACTIVE", "OUT_OF_SERVICE", "MAINTENANCE"].map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`flex-1 rounded-xl border px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${
-                  statusFilter === s 
-                    ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400" 
-                    : "border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
-                }`}
+                className={`flex-1 rounded-xl border px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${statusFilter === s
+                  ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400"
+                  : "border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
+                  }`}
               >
                 {s || "All Status"}
               </button>
@@ -147,11 +207,12 @@ export default function ResourceList() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-white/5 bg-white/5">
+                <tr className="border-b border-white/5 bg-slate-800/50">
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Resource</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Type</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Location</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Capacity</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Availability</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Status</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400">Actions</th>
                 </tr>
@@ -159,19 +220,19 @@ export default function ResourceList() {
               <tbody className="divide-y divide-white/5">
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
                       Loading resources...
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-red-400">
+                    <td colSpan="7" className="px-6 py-12 text-center text-red-400">
                       {error}
                     </td>
                   </tr>
                 ) : current.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
+                    <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center gap-2">
                         <Building2 size={32} className="opacity-20" />
                         <span>No resources found matching your criteria</span>
@@ -180,7 +241,7 @@ export default function ResourceList() {
                   </tr>
                 ) : (
                   current.map((r) => (
-                    <tr key={r.id || r.resourceCode} className="group transition-colors hover:bg-white/[0.02]">
+                    <tr key={r.id || r.resourceCode} className="group transition-all duration-300 hover:shadow-[inset_0_0_0_1px_rgba(99,102,241,0.2)]">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
                           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 font-bold">
@@ -208,13 +269,19 @@ export default function ResourceList() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-sm text-slate-300">
+                          <Clock size={14} className="text-slate-500" />
+                          {formatTime(r.startTime)} - {formatTime(r.endTime)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
                         <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${getStatusColor(r.status)}`}>
                           {r.status.replace(/_/g, " ")}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          {r.status === "ACTIVE" ? (
+                          {r.status === "ACTIVE" && (
                             <button
                               onClick={() => {
                                 setSelectedResource(r);
@@ -224,10 +291,6 @@ export default function ResourceList() {
                             >
                               Book
                             </button>
-                          ) : (
-                            <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                              Unavailable
-                            </span>
                           )}
                         </div>
                       </td>
@@ -242,7 +305,7 @@ export default function ResourceList() {
         {/* Pagination Section */}
         {totalPages > 1 && (
           <div className="mt-8 flex items-center justify-center gap-2">
-            <button 
+            <button
               disabled={page === 1}
               onClick={() => setPage(p => p - 1)}
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-slate-900/50 text-slate-400 transition-all hover:bg-white/5 disabled:opacity-20"
@@ -253,16 +316,15 @@ export default function ResourceList() {
               <button
                 key={i}
                 onClick={() => setPage(i + 1)}
-                className={`h-10 w-10 rounded-xl text-sm font-bold transition-all ${
-                  page === i + 1 
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" 
-                    : "border border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
-                }`}
+                className={`h-10 w-10 rounded-xl text-sm font-bold transition-all ${page === i + 1
+                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
+                  : "border border-white/5 bg-slate-900/50 text-slate-500 hover:bg-white/5"
+                  }`}
               >
                 {i + 1}
               </button>
             ))}
-            <button 
+            <button
               disabled={page === totalPages}
               onClick={() => setPage(p => p + 1)}
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-slate-900/50 text-slate-400 transition-all hover:bg-white/5 disabled:opacity-20"
@@ -277,8 +339,14 @@ export default function ResourceList() {
 
       <ResourceModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSave={addResource}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedResource(null);
+        }}
+        onSave={handleSaveResource}
+        initialData={selectedResource}
+        saving={saving}
+        saveError={saveError}
       />
 
       <BookingModal
