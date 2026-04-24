@@ -40,13 +40,13 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         Optional<User> existingUser = userRepository.findByEmail(email);
 
         if (existingUser.isEmpty()) {
-            // New user - Save to MongoDB
+            // New user - Save to MongoDB with default USER role
             User newUser = User.builder()
                     .name(name)
                     .email(email)
                     .profilePicture(picture)
                     .provider("GOOGLE")
-                    .role("USER") // Assign default role
+                    .role("USER") // Assign default role (stored without ROLE_ prefix)
                     .status("Active") // Assign default status
                     .createdAt(LocalDateTime.now())
                     .build();

@@ -10,4 +10,5 @@ public interface TicketRepository extends MongoRepository<Ticket, String> {
     List<Ticket> findByAssignedManager(String manager);
     List<Ticket> findByAssignedTechnicianEmail(String technicianEmail);
     List<Ticket> findByAssignedManagerEmail(String managerEmail);
+    long countByStatusIn(java.util.Collection<String> statuses);
 }

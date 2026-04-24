@@ -43,4 +43,30 @@ public class AuthController {
 
         return ResponseEntity.status(404).body("User not found in system");
     }
+
+    /**
+     * Endpoint: /api/auth/check
+     * Purpose: Returns authentication status and authorities for debugging
+     */
+    @GetMapping("/check")
+    public ResponseEntity<?> checkAuth(@AuthenticationPrincipal OAuth2User principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(java.util.Map.of(
+                "authenticated", false,
+                "message", "Not authenticated"
+            ));
+        }
+
+        String email = principal.getAttribute("email");
+        Optional<User> user = userRepository.findByEmail(email);
+
+        return ResponseEntity.ok(java.util.Map.of(
+            "authenticated", true,
+            "email", email,
+            "authorities", principal.getAuthorities().stream()
+                .map(Object::toString)
+                .toList(),
+            "role", user.map(User::getRole).orElse("UNKNOWN")
+        ));
+    }
 }

@@ -12,4 +12,5 @@ public interface ResourceRepository extends MongoRepository<Resource, String> {
     List<Resource> findAllByOrderByResourceCodeAsc();
     List<Resource> findByTypeIgnoreCaseOrderByResourceCodeAsc(String type);
     boolean existsByResourceCode(String resourceCode);
+    long countByStatusIgnoreCase(String status);
 }
