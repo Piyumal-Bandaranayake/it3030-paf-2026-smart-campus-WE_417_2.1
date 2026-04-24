@@ -145,27 +145,39 @@ export default function AdminDashboard() {
 function OverviewSection({ onNavigate }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [dashboardStats, setDashboardStats] = useState({
+    totalUsers: 0,
+    pendingBookings: 0,
+    activeResources: 0,
+    maintenanceTasks: 0
+  });
 
   useEffect(() => {
-    const fetchRecentNotifications = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        const response = await api.get("/api/notifications");
-        setNotifications((response.data || []).slice(0, 5));
+        const [notifRes, statsRes] = await Promise.all([
+          api.get("/api/notifications"),
+          api.get("/api/dashboard/stats")
+        ]);
+        setNotifications((notifRes.data || []).slice(0, 5));
+        if (statsRes.data) {
+          setDashboardStats(statsRes.data);
+        }
       } catch (err) {
-        console.error("Failed to fetch recent notifications:", err);
+        console.error("Failed to fetch dashboard data:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchRecentNotifications();
+    fetchData();
   }, []);
 
   const stats = [
-    { label: "Total Users", value: "1,284", icon: UsersIcon, color: "text-blue-400", bg: "bg-blue-400/10" },
-    { label: "Pending Bookings", value: "24", icon: CalendarCheck, color: "text-amber-400", bg: "bg-amber-400/10" },
-    { label: "Active Resources", value: "112", icon: Building2, color: "text-emerald-400", bg: "bg-emerald-400/10" },
-    { label: "Maintenance Tasks", value: "8", icon: Settings, color: "text-purple-400", bg: "bg-purple-400/10" },
+    { label: "Total Users", value: dashboardStats.totalUsers.toLocaleString(), icon: UsersIcon, color: "text-blue-400", bg: "bg-blue-400/10" },
+    { label: "Pending Bookings", value: dashboardStats.pendingBookings.toLocaleString(), icon: CalendarCheck, color: "text-amber-400", bg: "bg-amber-400/10" },
+    { label: "Active Resources", value: dashboardStats.activeResources.toLocaleString(), icon: Building2, color: "text-emerald-400", bg: "bg-emerald-400/10" },
+    { label: "Maintenance Tasks", value: dashboardStats.maintenanceTasks.toLocaleString(), icon: Settings, color: "text-purple-400", bg: "bg-purple-400/10" },
   ];
 
   const getTab = (type) => {
