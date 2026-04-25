@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import UserDashboard from "./pages/UserDashboard";
 import Home from "./pages/Home";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminSetup from "./pages/AdminSetup";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import TechnicianDashboard from "./pages/TechnicianDashboard";
 import Tickets from "./pages/Tickets";
@@ -72,6 +73,8 @@ function App() {
         <Route path="/user-dashboard" element={<UserDashboard />} />
         {/* Admin dashboard */}
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        {/* Admin setup - first time configuration */}
+        <Route path="/admin-setup" element={<AdminSetup />} />
         {/* Manager dashboard */}
         <Route path="/manager-dashboard" element={<ManagerDashboard />} />
         {/* Technician dashboard */}
