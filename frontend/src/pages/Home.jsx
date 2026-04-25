@@ -8,7 +8,15 @@ const Home = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-indigo-500/30">
+    <div 
+      className="min-h-screen text-white selection:bg-indigo-500/30"
+      style={{ 
+        backgroundImage: `linear-gradient(to bottom, rgba(2, 6, 23, 0.8), rgba(2, 6, 23, 0.95)), url('/smart_campus_bg.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
       <Navbar />
 
       <main>
