@@ -10,6 +10,7 @@ export default function BookingModal({ open, onClose, resource }) {
     attendance: "",
     purpose: "",
   });
+  const [errors, setErrors] = useState({});
   const [successData, setSuccessData] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -18,26 +19,42 @@ export default function BookingModal({ open, onClose, resource }) {
   // But let's be safe and support the 'open' prop if passed.
   if (open === false) return null;
 
+  const validate = () => {
+    const newErrors = {};
+    if (!form.date) newErrors.date = "Date is required";
+    if (!form.startTime) newErrors.startTime = "Start time is required";
+    if (!form.endTime) newErrors.endTime = "End time is required";
+    if (!form.attendance) newErrors.attendance = "Attendance is required";
+    else if (isNaN(form.attendance) || parseInt(form.attendance) <= 0) newErrors.attendance = "Must be a valid positive number";
+    if (!form.purpose.trim()) newErrors.purpose = "Purpose is required";
+
+    if (form.startTime && form.endTime && form.startTime >= form.endTime) {
+      newErrors.endTime = "End time must be after start time";
+    }
+
+    if (resource?.startTime && resource?.endTime && form.startTime && form.endTime) {
+       if (form.startTime < resource.startTime || form.endTime > resource.endTime) {
+         newErrors.time = `Resource is only available between ${resource.startTime} and ${resource.endTime}`;
+       }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    // Clear error for the field being edited
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: null });
+    }
+    if (errors.time && (e.target.name === 'startTime' || e.target.name === 'endTime')) {
+      setErrors({ ...errors, time: null, startTime: null, endTime: null });
+    }
   };
 
   const handleSubmit = async () => {
-    if (!form.date || !form.startTime || !form.endTime || !form.attendance || !form.purpose) {
-      alert("Please fill in all fields.");
-      return;
-    }
-
-    // Time validation
-    if (resource?.startTime && resource?.endTime) {
-      if (form.startTime < resource.startTime || form.endTime > resource.endTime) {
-        alert(`This resource is only available between ${resource.startTime} and ${resource.endTime}.`);
-        return;
-      }
-    }
-
-    if (form.startTime >= form.endTime) {
-      alert("End time must be after start time.");
+    if (!validate()) {
       return;
     }
 
@@ -140,9 +157,10 @@ export default function BookingModal({ open, onClose, resource }) {
             <input
               type="date"
               name="date"
-              className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+              className={`w-full rounded-2xl border ${errors.date ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/5 focus:border-indigo-500/50 focus:ring-indigo-500/50'} bg-slate-800/50 px-4 py-3 text-sm text-white focus:outline-none focus:ring-1`}
               onChange={handleChange}
             />
+            {errors.date && <p className="text-red-400 text-xs mt-1 ml-1">{errors.date}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -153,9 +171,11 @@ export default function BookingModal({ open, onClose, resource }) {
               <input
                 type="time"
                 name="startTime"
-                className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                className={`w-full rounded-2xl border ${errors.startTime || errors.time ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/5 focus:border-indigo-500/50 focus:ring-indigo-500/50'} bg-slate-800/50 px-4 py-3 text-sm text-white focus:outline-none focus:ring-1`}
                 onChange={handleChange}
               />
+              {errors.startTime && <p className="text-red-400 text-xs mt-1 ml-1">{errors.startTime}</p>}
+              {errors.time && !errors.startTime && <p className="text-red-400 text-xs mt-1 ml-1">{errors.time}</p>}
             </div>
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 ml-1">
@@ -164,9 +184,10 @@ export default function BookingModal({ open, onClose, resource }) {
               <input
                 type="time"
                 name="endTime"
-                className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                className={`w-full rounded-2xl border ${errors.endTime || errors.time ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/5 focus:border-indigo-500/50 focus:ring-indigo-500/50'} bg-slate-800/50 px-4 py-3 text-sm text-white focus:outline-none focus:ring-1`}
                 onChange={handleChange}
               />
+              {errors.endTime && <p className="text-red-400 text-xs mt-1 ml-1">{errors.endTime}</p>}
             </div>
           </div>
 
@@ -178,9 +199,10 @@ export default function BookingModal({ open, onClose, resource }) {
               type="number"
               name="attendance"
               placeholder="e.g. 50"
-              className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className={`w-full rounded-2xl border ${errors.attendance ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/5 focus:border-indigo-500/50 focus:ring-indigo-500/50'} bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
               onChange={handleChange}
             />
+            {errors.attendance && <p className="text-red-400 text-xs mt-1 ml-1">{errors.attendance}</p>}
           </div>
 
           <div className="space-y-2">
@@ -191,9 +213,10 @@ export default function BookingModal({ open, onClose, resource }) {
               name="purpose"
               placeholder="e.g. Research Project Presentation"
               rows="3"
-              className="w-full rounded-2xl border border-white/5 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+              className={`w-full rounded-2xl border ${errors.purpose ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/50' : 'border-white/5 focus:border-indigo-500/50 focus:ring-indigo-500/50'} bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-1`}
               onChange={handleChange}
             />
+            {errors.purpose && <p className="text-red-400 text-xs mt-1 ml-1">{errors.purpose}</p>}
           </div>
         </div>
 
