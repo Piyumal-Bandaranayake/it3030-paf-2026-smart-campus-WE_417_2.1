@@ -40,6 +40,22 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{id}/role")
+    public ResponseEntity<?> updateUserRole(@PathVariable String id, @RequestBody java.util.Map<String, String> payload) {
+        String newRole = payload.get("role");
+        if (newRole == null || newRole.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Role is required");
+        }
+
+        return userRepository.findById(id)
+            .map(user -> {
+                user.setRole(newRole.toUpperCase());
+                userRepository.save(user);
+                return ResponseEntity.ok(user);
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("")
     public ResponseEntity<?> createOrUpdateUser(@RequestBody User user) {
         if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
