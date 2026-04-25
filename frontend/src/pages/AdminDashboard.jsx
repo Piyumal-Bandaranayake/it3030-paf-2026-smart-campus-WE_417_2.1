@@ -225,8 +225,8 @@ function OverviewSection({ onNavigate }) {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-[32px] border border-white/5 bg-slate-900/40 p-8">
+      <div className="grid grid-cols-1 gap-8">
+        <div className="rounded-[32px] border border-white/5 bg-slate-900/40 p-8">
           <div className="mb-6 flex items-center justify-between">
             <h3 className="text-xl font-bold">Recent Activity</h3>
             <span className="text-xs text-slate-500 font-medium">Last 5 events</span>
@@ -274,17 +274,6 @@ function OverviewSection({ onNavigate }) {
             )}
           </div>
         </div>
-        <div className="rounded-[32px] border border-white/5 bg-slate-900/40 p-8 text-center">
-          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-indigo-500/10 text-indigo-400 mx-auto">
-            <Plus size={32} />
-          </div>
-          <h3 className="text-xl font-bold mb-2">Quick Actions</h3>
-          <p className="text-sm text-slate-400 mb-8 px-4">Instantly perform administrative tasks with shortcuts.</p>
-          <div className="space-y-3">
-            <button className="w-full rounded-2xl bg-indigo-600 py-4 text-sm font-bold text-white">Add New User</button>
-            <button className="w-full rounded-2xl bg-white/5 py-4 text-sm font-bold text-slate-300 border border-white/5 hover:border-white/10 transition-all">Create Report</button>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -298,6 +287,7 @@ function UserManagementSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
+  const [formErrors, setFormErrors] = useState({});
 
   const fetchUsers = async () => {
     try {
@@ -317,12 +307,27 @@ function UserManagementSection() {
     fetchUsers();
   }, []);
 
+  const validateForm = () => {
+    const errors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!newUser.email) {
+      errors.email = "Email is required";
+    } else if (!emailRegex.test(newUser.email)) {
+      errors.email = "Invalid email format";
+    }
+
+    const phoneRegex = /^\+?[0-9\s\-]{9,15}$/;
+    if (newUser.phone && !phoneRegex.test(newUser.phone)) {
+      errors.phone = "Invalid phone number format (e.g. +94 7X XXX XXXX)";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleAddUser = async (e) => {
     e.preventDefault();
-    if (!newUser.name || !newUser.email) {
-      alert("Please fill in at least name and email.");
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
       setAddingUser(true);
@@ -330,6 +335,7 @@ function UserManagementSection() {
       setUsers((prev) => [...prev, response.data]);
       setAddUserModalOpen(false);
       setNewUser({ name: "", email: "", phone: "", role: "USER" });
+      setFormErrors({});
       alert("User added successfully! They can now log in using their Google account with this email.");
     } catch (err) {
       console.error("Failed to add user:", err);
@@ -468,20 +474,22 @@ function UserManagementSection() {
                   type="email"
                   required
                   value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full rounded-xl border border-white/5 bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none"
+                  onChange={(e) => { setNewUser({ ...newUser, email: e.target.value }); setFormErrors({ ...formErrors, email: "" }); }}
+                  className={`w-full rounded-xl border ${formErrors.email ? 'border-red-500/50' : 'border-white/5'} bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none`}
                   placeholder="name@university.edu"
                 />
+                {formErrors.email && <p className="mt-1 text-xs text-red-400">{formErrors.email}</p>}
               </div>
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Phone Number</label>
                 <input
                   type="text"
                   value={newUser.phone}
-                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                  className="w-full rounded-xl border border-white/5 bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none"
+                  onChange={(e) => { setNewUser({ ...newUser, phone: e.target.value }); setFormErrors({ ...formErrors, phone: "" }); }}
+                  className={`w-full rounded-xl border ${formErrors.phone ? 'border-red-500/50' : 'border-white/5'} bg-slate-800/50 p-3 text-sm text-white focus:border-indigo-500/50 focus:outline-none`}
                   placeholder="+94 7X XXX XXXX"
                 />
+                {formErrors.phone && <p className="mt-1 text-xs text-red-400">{formErrors.phone}</p>}
               </div>
               <div>
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 block">Role</label>
