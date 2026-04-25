@@ -84,6 +84,7 @@ export default function RaiseTicketButton() {
   };
 
   const [form, setForm]     = useState(emptyForm);
+  const [errors, setErrors] = useState({}); // New state for field errors
   const [images, setImages] = useState([]); // [{ file, preview }]
   const [imageDrag, setImageDrag] = useState(false);
 
@@ -116,6 +117,26 @@ export default function RaiseTicketButton() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
+    // Clear error for the field being edited
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const validate = () => {
+    const newErrors = {};
+    if (!form.resource.trim()) newErrors.resource = "Resource / Area is required";
+    if (!form.category) newErrors.category = "Category is required";
+    if (!form.priority) newErrors.priority = "Priority is required";
+    if (!form.description.trim()) newErrors.description = "Issue Description is required";
+    
+    // Optional contact details validation
+    if (form.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail)) {
+      newErrors.contactEmail = "Invalid email format";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const processFiles = useCallback((files) => {
@@ -153,9 +174,9 @@ export default function RaiseTicketButton() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Basic validation
-    if (!form.resource.trim() || !form.category || !form.priority || !form.description.trim()) {
-      setErrorMsg("Please fill in all required fields.");
+    // Form validation
+    if (!validate()) {
+      setErrorMsg("Please fix the errors below.");
       return;
     }
 
@@ -270,9 +291,10 @@ export default function RaiseTicketButton() {
                       value={form.resource}
                       onChange={handleChange}
                       placeholder="e.g. Library, Lab 3, Gym"
-                      className="rtb-input"
-                      required
+                      className={`rtb-input ${errors.resource ? 'rtb-input-error' : ''}`}
+                      style={errors.resource ? { borderColor: '#f87171' } : {}}
                     />
+                    {errors.resource && <span className="rtb-error-text" style={{ color: "#f87171", fontSize: "0.7rem", marginTop: "0.25rem", display: "block" }}>{errors.resource}</span>}
                   </div>
                   <div className="rtb-field">
                     <label htmlFor="ticket-location" className="rtb-label">
@@ -306,7 +328,7 @@ export default function RaiseTicketButton() {
                         value={form.category}
                         onChange={handleChange}
                         className="rtb-select"
-                        required
+                        style={errors.category ? { borderColor: '#f87171' } : {}}
                       >
                         <option value="">Select category…</option>
                         {CATEGORIES.map((c) => (
@@ -315,6 +337,7 @@ export default function RaiseTicketButton() {
                       </select>
                       <ChevronDown size={14} className="rtb-select-icon" />
                     </div>
+                    {errors.category && <span className="rtb-error-text" style={{ color: "#f87171", fontSize: "0.7rem", marginTop: "0.25rem", display: "block" }}>{errors.category}</span>}
                   </div>
 
                   {/* Priority */}
@@ -335,7 +358,7 @@ export default function RaiseTicketButton() {
                           />
                           <span
                             className={`rtb-priority-chip ${form.priority === value ? "rtb-priority-active" : ""}`}
-                            style={form.priority === value ? { background: color + "22", borderColor: color, color } : {}}
+                            style={form.priority === value ? { background: color + "22", borderColor: color, color } : (errors.priority ? { borderColor: '#f87171' } : {})}
                           >
                             <AlertTriangle size={11} />
                             {label}
@@ -343,6 +366,7 @@ export default function RaiseTicketButton() {
                         </label>
                       ))}
                     </div>
+                    {errors.priority && <span className="rtb-error-text" style={{ color: "#f87171", fontSize: "0.7rem", marginTop: "0.25rem", display: "block" }}>{errors.priority}</span>}
                   </div>
                 </div>
 
@@ -362,8 +386,9 @@ export default function RaiseTicketButton() {
                     rows={4}
                     placeholder="Describe the issue in detail…"
                     className="rtb-textarea"
-                    required
+                    style={errors.description ? { borderColor: '#f87171' } : {}}
                   />
+                  {errors.description && <span className="rtb-error-text" style={{ color: "#f87171", fontSize: "0.7rem", marginTop: "0.25rem", display: "block" }}>{errors.description}</span>}
                   <span className="rtb-char-count">{form.description.length} chars</span>
                 </div>
 
@@ -444,7 +469,9 @@ export default function RaiseTicketButton() {
                       onChange={handleChange}
                       placeholder="you@university.edu"
                       className="rtb-input"
+                      style={errors.contactEmail ? { borderColor: '#f87171' } : {}}
                     />
+                    {errors.contactEmail && <span className="rtb-error-text" style={{ color: "#f87171", fontSize: "0.7rem", marginTop: "0.25rem", display: "block" }}>{errors.contactEmail}</span>}
                   </div>
                   <div className="rtb-field">
                     <label htmlFor="ticket-contact-phone" className="rtb-label">

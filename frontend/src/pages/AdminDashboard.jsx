@@ -50,7 +50,12 @@ export default function AdminDashboard() {
     const stored = sessionStorage.getItem("user");
     if (stored) {
       const userData = JSON.parse(stored);
-      // In a real app, we'd check if user.role === 'ADMIN'
+      // Check if user has ADMIN role
+      if (userData.role !== 'ADMIN') {
+        alert('Access Denied: You need ADMIN role to access this page.');
+        navigate("/");
+        return;
+      }
       setUser(userData);
     } else {
       navigate("/login");
@@ -166,6 +171,9 @@ function OverviewSection({ onNavigate }) {
         }
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);
+        if (err.response?.status === 403) {
+          alert('Access Denied: Your account does not have ADMIN privileges. Please contact a system administrator.');
+        }
       } finally {
         setLoading(false);
       }
@@ -297,7 +305,11 @@ function UserManagementSection() {
       setUsers(response.data || []);
     } catch (err) {
       console.error("Failed to fetch users:", err);
-      setError("Unable to load users. Please try again.");
+      if (err.response?.status === 403) {
+        setError("Access Denied: You need ADMIN role to manage users.");
+      } else {
+        setError("Unable to load users. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

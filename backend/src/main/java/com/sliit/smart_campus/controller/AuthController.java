@@ -66,7 +66,45 @@ public class AuthController {
             "authorities", principal.getAuthorities().stream()
                 .map(Object::toString)
                 .toList(),
-            "role", user.map(User::getRole).orElse("UNKNOWN")
+            "role", user.map(User::getRole).orElse("UNKNOWN"),
+            "userId", user.map(User::getId).orElse("UNKNOWN")
+        ));
+    }
+
+    /**
+     * Endpoint: /api/auth/setup-admin
+     * Purpose: Allows setting up the first admin user if no admin exists
+     * This is a one-time setup endpoint for initial configuration
+     */
+    @GetMapping("/setup-admin")
+    public ResponseEntity<?> setupAdmin(@AuthenticationPrincipal OAuth2User principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body("Not authenticated. Please log in first.");
+        }
+
+        // Check if any admin already exists
+        java.util.List<User> admins = userRepository.findByRole("ADMIN");
+        if (!admins.isEmpty()) {
+            return ResponseEntity.status(403).body("Admin user already exists. Contact existing admin to grant you access.");
+        }
+
+        // Get current user
+        String email = principal.getAttribute("email");
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(404).body("User not found in system. Please complete registration first.");
+        }
+
+        // Set current user as admin
+        User user = userOpt.get();
+        user.setRole("ADMIN");
+        userRepository.save(user);
+
+        return ResponseEntity.ok(java.util.Map.of(
+            "success", true,
+            "message", "You have been set as ADMIN. Please log out and log back in for changes to take effect.",
+            "user", user
         ));
     }
 }

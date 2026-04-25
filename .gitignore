@@ -3,9 +3,7 @@
 # ──────────────────────────────────────────
 
 # ─── Environment / Secrets ───────────────
-.env
 .env.example
-.env.local
 .env.*.local
 *.env
 
@@ -26,10 +24,11 @@ frontend/.vite/
 # ─── IDEs ────────────────────────────────
 .idea/
 *.iml
-.vscode/
 *.suo
 *.user
 
 # ─── OS ──────────────────────────────────
 .DS_Store
 Thumbs.db
+config.bat
+node_modules
