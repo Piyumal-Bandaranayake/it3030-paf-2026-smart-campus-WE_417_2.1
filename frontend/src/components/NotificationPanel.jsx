@@ -7,6 +7,7 @@ export default function NotificationPanel({ onNavigate }) {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [filter, setFilter] = useState("ALL");
   const dropdownRef = useRef(null);
 
   const fetchNotifications = async () => {
@@ -120,6 +121,7 @@ export default function NotificationPanel({ onNavigate }) {
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const filteredNotifications = notifications.filter(n => filter === "ALL" || n.type === filter);
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -138,7 +140,7 @@ export default function NotificationPanel({ onNavigate }) {
       {isOpen && (
         <div className="absolute right-0 mt-4 w-[420px] rounded-3xl border border-white/10 bg-slate-900/95 backdrop-blur-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
           {/* Header */}
-          <div className="p-6 border-b border-white/5 flex items-center justify-between">
+          <div className="p-6 border-b border-white/5 flex items-center justify-between pb-4">
             <div>
               <h3 className="text-lg font-bold text-white">Notifications</h3>
               <p className="text-xs text-slate-500">
@@ -155,18 +157,37 @@ export default function NotificationPanel({ onNavigate }) {
             )}
           </div>
 
+          {/* Filters */}
+          <div className="px-6 py-3 border-b border-white/5 flex gap-2 overflow-x-auto no-scrollbar">
+            {["ALL", "TICKET", "REGISTRATION", "BOOKING"].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`whitespace-nowrap px-3 py-1.5 rounded-full text-[11px] font-bold transition-all ${
+                  filter === f 
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20" 
+                    : "bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                {f === "ALL" ? "All" : getTypeLabel(f).label}
+              </button>
+            ))}
+          </div>
+
           {/* List */}
-          <div className="max-h-[420px] overflow-y-auto">
+          <div className="max-h-[360px] overflow-y-auto custom-scrollbar">
             {loading && notifications.length === 0 ? (
               <div className="p-10 text-center text-slate-500 text-sm">Loading...</div>
-            ) : notifications.length === 0 ? (
+            ) : filteredNotifications.length === 0 ? (
               <div className="p-10 text-center flex flex-col items-center gap-3">
                 <Bell size={32} className="text-slate-700" />
-                <p className="text-slate-500 text-sm font-medium">No notifications yet</p>
+                <p className="text-slate-500 text-sm font-medium">
+                  {notifications.length === 0 ? "No notifications yet" : "No notifications for this filter"}
+                </p>
               </div>
             ) : (
               <div className="divide-y divide-white/5">
-                {notifications.map((n) => {
+                {filteredNotifications.map((n) => {
                   const typeInfo = getTypeLabel(n.type);
                   return (
                     <div
